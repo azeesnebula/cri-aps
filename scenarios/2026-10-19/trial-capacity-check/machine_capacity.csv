@@ -1,0 +1,13 @@
+﻿machine,description,horizon_start,horizon_end,staffed_available_hours,loaded_hours,utilization_percent,efficiency_percent
+CRI-ASSY-01,staffed assy cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,0.0,0.0,85.0
+CRI-ASSY-02,staffed assy cell 2,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,202.471,48.21,85.0
+CRI-CNC-01,staffed cnc cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,416.0,178.588,42.93,85.0
+CRI-ELEC-01,staffed elec cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,202.47,48.21,85.0
+CRI-GRIND-01,staffed grind cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,61.49,14.64,85.0
+CRI-HYD-01,staffed hyd cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,305.498,72.74,85.0
+CRI-MOTOR-01,staffed motor cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,174.668,41.59,85.0
+CRI-PACK-01,staffed pack cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,87.333,20.79,85.0
+CRI-TEST-01,staffed test cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,416.0,0.0,0.0,85.0
+CRI-TEST-02,staffed test cell 2,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,172.707,41.12,85.0
+CRI-TURN-01,staffed turn cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,93.216,22.19,85.0
+CRI-WIND-01,staffed wind cell 1,2026-10-19 06:00:00,2026-11-20 00:00:00,420.0,289.804,69.0,85.0

@@ -1,0 +1,51 @@
+{% load i18n %}
+{% if error %}
+<div class="alert alert-danger"><strong>{{ filename|default:"" }}</strong> {{ error }}</div>
+{% else %}
+
+{% if report.blocking %}
+<div class="alert alert-danger">
+  <strong>{% trans "This workbook cannot be loaded yet" %}</strong>
+  <ul style="margin:0.5rem 0 0 1rem">
+    {% for problem in report.blocking %}<li>{{ problem }}</li>{% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="alert alert-success">
+  <strong>{{ filename }}</strong> {% trans "can be read. Nothing has been written." %}
+</div>
+{% endif %}
+
+<table class="table table-sm" style="margin-top:0.5rem">
+  <thead>
+    <tr>
+      <th>{% trans "data"|capfirst %}</th>
+      <th>{% trans "sheet"|capfirst %}</th>
+      <th style="text-align:right">{% trans "rows"|capfirst %}</th>
+      <th>{% trans "data starts at" %}</th>
+      <th>{% trans "columns found" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sheet in report.sheets %}
+    <tr{% if sheet.missing or not sheet.sheet %} class="table-danger"{% endif %}>
+      <td>{{ sheet.key }}</td>
+      <td>{% if sheet.sheet %}{{ sheet.sheet }}{% else %}<em>{% trans "not found" %}</em>{% endif %}</td>
+      <td style="text-align:right">{{ sheet.rows }}</td>
+      <td>{% if sheet.header_row != None %}{% trans "row" %} {{ sheet.header_row }}{% else %}-{% endif %}</td>
+      <td>
+        {{ sheet.found|join:", " }}
+        {% if sheet.missing %}<br><strong>{% trans "missing" %}:</strong> {{ sheet.missing|join:", " }}{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if report.notes %}
+<ul style="margin-left:1rem">
+  {% for note in report.notes %}<li>{{ note }}</li>{% endfor %}
+</ul>
+{% endif %}
+
+{% endif %}

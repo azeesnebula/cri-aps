@@ -1,0 +1,11 @@
+{
+  "name": "C.R.I Pumps — Production Planning",
+  "short_name": "C.R.I Planning",
+  "description": "C.R.I Pumps manufacturing, scheduling and delivery workspace",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#C8102E",
+  "icons": [{"src": "cri-logo.gif", "sizes": "270x67", "type": "image/gif", "purpose": "any"}]
+}

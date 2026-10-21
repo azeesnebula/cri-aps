@@ -1,0 +1,285 @@
+﻿{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+The machine schedule.
+
+Everything positional is a percentage handed down by the view, so the
+chart reflows on resize with no javascript at all. One absolutely
+positioned .sg-sc-bar per operation, inside a lane row that the view has
+already packed to the machine's true concurrency.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-sc" id="sg-sc"
+     data-op-url="{{ request.prefix }}/machine-schedule/op/"
+     data-move-url="{{ request.prefix }}/machine-schedule/move/"
+     data-status-url="{{ request.prefix }}/machine-schedule/replan/status/"
+     data-window-start="{{ start|date:'c' }}"
+     data-window-seconds="{{ span_seconds }}"
+     data-can-move="{% if can_move %}1{% else %}0{% endif %}"
+     {% if move_banner and move_banner.mode == 'replanning' or move_banner and move_banner.mode == 'undoing' %}data-active-task="{{ move_banner.taskid }}"{% endif %}>
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Machine schedule</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  {# ---------------------------------------------------------- controls #}
+  <div class="sg-sc-bar-top">
+    <div class="sg-sc-nav">
+      <a class="sieger-btn" href="?start={{ prev_start }}&amp;days={{ days }}{{ keep }}" title="{% trans 'previous window' %}">&larr;</a>
+      <a class="sieger-btn" href="?start={{ today_start }}&amp;days={{ days }}{{ keep }}">{% trans "today" %}</a>
+      <a class="sieger-btn" href="?start={{ next_start }}&amp;days={{ days }}{{ keep }}" title="{% trans 'next window' %}">&rarr;</a>
+    </div>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">window</span>
+      {% for r in ranges %}
+      <a class="sieger-btn{% if r == days %} sieger-btn-go{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;days={{ r }}{{ keep }}">{{ r }}d</a>
+      {% endfor %}
+    </div>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">section</span>
+      <a class="sieger-btn{% if not cur_section %} sieger-btn-go{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}{% if cur_demand %}&amp;demand={{ cur_demand|urlencode }}{% endif %}">all</a>
+      {% for s in section_chips %}
+      <a class="sieger-btn{% if s == cur_section %} sieger-btn-go{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}&amp;section={{ s|urlencode }}{% if cur_demand %}&amp;demand={{ cur_demand|urlencode }}{% endif %}">{{ s }}</a>
+      {% endfor %}
+      {% if cur_group %}
+      <span class="sieger-stat">group <b>{{ cur_group }}</b>
+        <a class="sg-sc-clear" href="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}{% if cur_section %}&amp;section={{ cur_section|urlencode }}{% endif %}{% if cur_demand %}&amp;demand={{ cur_demand|urlencode }}{% endif %}" title="{% trans 'clear group filter' %}">&times;</a></span>
+      {% endif %}
+    </div>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">shipment</span>
+      <select class="sg-sc-demand" id="sg-sc-dsq"
+              data-base="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}{% if cur_section %}&amp;section={{ cur_section|urlencode }}{% endif %}{% if cur_group %}&amp;group={{ cur_group|urlencode }}{% endif %}">
+        <option value="">all shipments</option>
+        {% for t, d in dsq_options %}
+        <option value="{{ t }}"{% if t == cur_dsq %} selected{% endif %}>{{ d|default:t }} ({{ t }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">production order</span>
+      <select class="sg-sc-demand" id="sg-sc-demand"
+              data-base="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}{% if cur_section %}&amp;section={{ cur_section|urlencode }}{% endif %}{% if cur_group %}&amp;group={{ cur_group|urlencode }}{% endif %}{% if cur_dsq %}&amp;dsq={{ cur_dsq|urlencode }}{% endif %}">
+        <option value="">all production orders</option>
+        {% for d, n in demand_options %}
+        <option value="{{ d }}"{% if d == cur_demand %} selected{% endif %}>{{ d }}{% if n %} ({{ n }}){% endif %}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="sieger-btn" id="sg-byorder"
+              aria-pressed="false">{% trans "colour by order" %}</button>
+    </div>
+
+    <div class="sg-sc-facts">
+      <span class="sieger-stat"><b>{{ machines|length }}</b> machines loaded</span>
+      <span class="sieger-stat"><b>{{ bar_total }}</b> operations</span>
+      {% if late_total %}
+      <span class="sieger-stat sieger-stat-warn"><b>{{ late_total }}</b> late or critical</span>
+      {% else %}
+      <span class="sieger-stat sieger-stat-ok">all on time</span>
+      {% endif %}
+      {% if idle_machines > 0 %}
+      <span class="sieger-stat sieger-stat-quiet"><b>{{ idle_machines }}</b> idle, hidden</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="sieger-lede">
+    {{ start|date:"D d M Y" }} &rarr; {{ end|date:"D d M Y" }}.
+    One row per machine; bars stack only where work genuinely overlaps.{% if can_move %}
+    Drag a proposed bar to another slot or machine to pin it there.{% endif %}
+  </p>
+
+  {% comment %}---------------------------------------------------- key
+  Above the chart, not below it: this is how a first-time reader gets in,
+  and the chart below scrolls for pages.
+
+  NOTE the tag: Django's {# #} is SINGLE LINE ONLY - spread it over three
+  and the whole thing renders as visible text on the page.
+  {% endcomment %}
+  <div class="sg-sc-key">
+    <p class="sg-sc-key-h">How to read this board</p>
+    <div class="sg-sc-key-row">
+      <span class="sg-sc-key-i"><i class="sg-sc-sw is-ok"></i>
+        <span><b>On time</b><em>Will meet its due date</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw is-late"></i>
+        <span><b>Late</b><em>Finishes after the due date</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw is-crit"></i>
+        <span><b>Critical</b><em>The planner could not place it properly</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw is-ok is-proposed"></i>
+        <span><b>Striped</b><em>Proposed &mdash; not yet approved, so you can drag it</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw sg-sc-sw-now"></i>
+        <span><b>Red line</b><em>Today, the plan date</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw sg-sc-sw-lane"></i>
+        <span><b>Stacked rows</b><em>That machine runs those jobs at once</em></span></span>
+      <span class="sg-sc-key-i"><i class="sg-sc-sw sg-sc-sw-off"></i>
+        <span><b>Shaded column</b><em>A non-working day on the shift calendar &mdash; no capacity, so nothing is scheduled</em></span></span>
+    </div>
+    <p class="sg-sc-key-note">
+      Each bar is one operation on one machine; its width is how long the job
+      takes. <b>Click</b> a bar for the full order &mdash; routing, machines,
+      components and the customer order it feeds. Hatched edges mean the job
+      carries on past this window. In <b>colour by order</b> mode a click
+      highlights the whole order instead; double-click still opens the details.
+    </p>
+  </div>
+
+  {# --------------------------------------------------------- move banner #}
+  {% if move_banner %}
+  <div class="sg-mv-banner is-{{ move_banner.mode }}" id="sg-mv-banner"
+       data-undo-id="{{ move_banner.undo_id }}">
+    {% if move_banner.mode == 'replanning' or move_banner.mode == 'undoing' %}
+    <span class="sg-mv-spin" aria-hidden="true"></span>
+    <span id="sg-mv-progress">
+      {% if move_banner.mode == 'undoing' %}{% trans "Undoing" %}{% else %}{% trans "Replanning around the pin" %}{% endif %}
+      &mdash; {{ move_banner.move.label }} &rarr; {{ move_banner.move.new.resource }}
+      <b>{{ move_banner.task_status }}</b>
+    </span>
+    {% elif move_banner.mode == 'done' %}
+    <span>
+      <b>{% trans "Moved" %} {{ move_banner.move.label }}</b>
+      {% trans "to" %} {{ move_banner.move.new.resource }}
+      ({% trans "was" %} {{ move_banner.move.old.resource }}).
+      {% if move_banner.delta %}
+      {% trans "Late orders" %} {{ move_banner.delta.late_before }} &rarr; <b>{{ move_banner.delta.late_after }}</b>{% if move_banner.delta.problems %};
+      {% for p in move_banner.delta.problems %}{{ p.name }} {{ p.before }} &rarr; {{ p.after }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}.
+      {% endif %}
+    </span>
+    <button type="button" class="sieger-btn" id="sg-mv-undo">{% trans "undo" %}</button>
+    <button type="button" class="sieger-btn" id="sg-mv-dismiss">{% trans "dismiss" %}</button>
+    {% elif move_banner.mode == 'undone' %}
+    <span>{% trans "Move undone" %} &mdash; {{ move_banner.move.label }} {% trans "is back on" %} {{ move_banner.move.old.resource }}.</span>
+    <button type="button" class="sieger-btn" id="sg-mv-dismiss">{% trans "dismiss" %}</button>
+    {% else %}
+    <span>
+      <b>{% trans "The replan failed" %}</b> &mdash;
+      {% trans "the move of" %} {{ move_banner.move.label }} {% trans "is written but the rest of the plan has not rearranged." %}
+    </span>
+    <a class="sieger-btn" href="{{ request.prefix }}/execute/">{% trans "show log" %}</a>
+    <button type="button" class="sieger-btn" id="sg-mv-undo">{% trans "undo move" %}</button>
+    <button type="button" class="sieger-btn" id="sg-mv-dismiss">{% trans "dismiss" %}</button>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if machines %}
+  {# ------------------------------------------------------------- chart #}
+  <div class="sg-sc-chart">
+
+    <div class="sg-sc-head">
+      <div class="sg-sc-name sg-sc-headname">{% trans "machine" %}</div>
+      <div class="sg-sc-track">
+        {% for t in ticks %}
+        <div class="sg-sc-tick{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+             {% if t.weekend %}title="{% trans 'Non-working day on the shift calendar' %}"{% endif %}
+             style="left:{{ t.left }}%;width:{{ t.width }}%">
+          <span>{{ t.label }}</span>
+        </div>
+        {% endfor %}
+        {% if now_pct is not None %}
+        <div class="sg-sc-now" style="left:{{ now_pct }}%" title="{% trans 'plan date' %}"></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% for sec in sections %}
+    <section class="sg-sc-sec" data-sec="{{ sec.code }}">
+      <button type="button" class="sg-sc-sec-hd" aria-expanded="true">
+        <span class="sg-sc-sec-arrow" aria-hidden="true">&#9662;</span>
+        <b>{{ sec.code }}</b>
+        {% if sec.label %}<span class="sg-sc-sec-lbl">{{ sec.label }}</span>{% endif %}
+        <span class="sg-sc-sec-roll">{{ sec.count }} machine{{ sec.count|pluralize }}
+          &middot; {{ sec.avg_util }}% avg
+          &middot; {{ sec.bar_count }} op{{ sec.bar_count|pluralize }}
+          {% if sec.late %}&middot; <em class="is-warn">{{ sec.late }} late</em>{% endif %}</span>
+      </button>
+
+      <div class="sg-sc-sec-body">
+        {% for g in sec.groups %}
+        {% if sec.multi_group %}
+        <div class="sg-sc-grp">
+          <a href="?start={{ start|date:'Y-m-d' }}&amp;days={{ days }}&amp;group={{ g.code|urlencode }}{% if cur_demand %}&amp;demand={{ cur_demand|urlencode }}{% endif %}"
+             title="{% trans 'only this group' %}">{{ g.code }}</a>
+          {% if g.label and g.label != g.code %}<span>{{ g.label }}</span>{% endif %}
+        </div>
+        {% endif %}
+
+        {% for m in g.machines %}
+        <div class="sg-sc-row" data-machine="{{ m.name }}">
+          <div class="sg-sc-name">
+            <span class="sg-sc-mach">{{ m.name }}</span>
+            {% if m.descr and m.descr != m.name %}
+            <span class="sg-sc-meta">{{ m.descr }} &middot; {{ m.util }}% &middot; {{ m.count }} op{{ m.count|pluralize }}{% if m.lanes > 1 %} &middot; {{ m.lanes }} at once{% endif %}</span>
+            {% else %}
+            <span class="sg-sc-meta">{{ m.util }}% &middot; {{ m.count }} op{{ m.count|pluralize }}{% if m.lanes > 1 %} &middot; {{ m.lanes }} at once{% endif %}</span>
+            {% endif %}
+          </div>
+
+          <div class="sg-sc-track" style="height:calc({{ m.lanes }} * var(--sg-sc-lane))">
+            {% for t in ticks %}
+            <div class="sg-sc-col{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+                 style="left:{{ t.left }}%;width:{{ t.width }}%"></div>
+            {% endfor %}
+            {% if now_pct is not None %}
+            <div class="sg-sc-now" style="left:{{ now_pct }}%"></div>
+            {% endif %}
+
+            {% for b in m.bars %}
+            <div class="sg-sc-bar is-{{ b.tone }}{% if b.status == 'proposed' %} is-proposed{% endif %}{% if b.clipped %} is-clipped{% endif %}"
+                 data-ref="{{ b.ref }}" data-demand="{{ b.demand }}"
+                 data-status="{{ b.status }}" data-machine="{{ m.name }}"
+                 data-start="{{ b.start|date:'c' }}" data-end="{{ b.end|date:'c' }}"
+                 role="button" tabindex="0"
+                 style="left:{{ b.left }}%;width:{{ b.width }}%;top:calc({{ b.lane }} * var(--sg-sc-lane));--dh:{{ b.hue }};"
+                 title="{{ b.label }}&#10;{% if b.operation %}{{ b.operation }}&#10;{% endif %}ref {{ b.ref }} &middot; {{ b.type }}&#10;{{ b.start|date:'D d M H:i' }} &rarr; {{ b.end|date:'D d M H:i' }} ({{ b.hours }} h)&#10;qty {{ b.qty|floatformat:"-2" }} &middot; {{ b.status }}{% if b.delay_days > 0 %}&#10;{{ b.delay_days }} days late{% endif %}{% if b.demand %}&#10;order {{ b.demand }}{% endif %}">
+              <span class="sg-sc-lbl">{{ b.label }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="sieger-card sieger-card-note">
+    <p>Nothing is scheduled between {{ start|date:"d M Y" }} and {{ end|date:"d M Y" }}.</p>
+    <p>Either widen the window, step forward with &rarr;, or run the planner from the cockpit.</p>
+  </div>
+  {% endif %}
+
+  {# ------------------------------------------------------------- popup #}
+  <div class="sg-md" id="sg-md" hidden>
+    <div class="sg-md-back" data-close></div>
+    <div class="sg-md-panel" role="dialog" aria-modal="true" aria-labelledby="sg-md-title">
+      <button class="sg-md-x" type="button" data-close aria-label="{% trans 'close' %}">&times;</button>
+      <div class="sg-md-body" id="sg-md-body">
+        <p class="sg-md-load">loading&hellip;</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{STATIC_URL}}sieger_ui/schedule.js?v=6"></script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+{% block content_title %}{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}sieger_ui/production-orders.css?v=1" />
+{% endblock %}
+{% block content %}
+<div class="sieger-cockpit sg-orders" id="production-order-list">
+  <header class="sg-orders-header">
+    <div><a href="{{ request.prefix }}/" class="sg-orders-back">&larr; Home</a><h1>Production orders</h1><p>Find orders by shipment and delivery status.</p></div>
+    <span class="sg-orders-note">Open and quote orders &middot; saved plan</span>
+  </header>
+
+  <form id="production-order-filters" class="sg-orders-filters" action="{{ request.prefix }}/production-orders/" method="get">
+    <div><label for="production-shipment">Shipment</label><select id="production-shipment" name="dsq">
+      <option value=""{% if not selected_shipment %} selected{% endif %}>All shipments ({{ all_order_count }})</option>
+      {% for ship in shipments %}<option value="{{ ship.shipment_tag }}"{% if ship.shipment_tag == selected_shipment %} selected{% endif %}>{{ ship.label }} &middot; {{ ship.shipment_tag }} ({{ ship.orders }})</option>{% endfor %}
+    </select></div>
+    <div><label for="order-status">Delivery status</label><select id="order-status" name="status">
+      <option value="all"{% if delivery_status == 'all' %} selected{% endif %}>All statuses ({{ counts.total }})</option>
+      <option value="late"{% if delivery_status == 'late' %} selected{% endif %}>Late ({{ counts.late }})</option>
+      <option value="ontime"{% if delivery_status == 'ontime' %} selected{% endif %}>On time ({{ counts.ontime }})</option>
+      <option value="unplanned"{% if delivery_status == 'unplanned' %} selected{% endif %}>Unplanned ({{ counts.unplanned }})</option>
+    </select></div>
+    <div class="sg-orders-search"><label for="order-search">Order or part</label><input id="order-search" name="q" type="search" maxlength="200" value="{{ search }}" placeholder="Order number, part or description" /></div>
+    <div class="sg-orders-size"><label for="order-page-size">Per page</label><select id="order-page-size" name="per_page">{% for size in page_sizes %}<option value="{{ size }}"{% if size == per_page %} selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
+    <div class="sg-orders-filter-actions"><button type="submit" class="sg-orders-button is-primary">Apply filters</button><a href="{{ reset_url }}" class="sg-orders-button">Reset</a></div>
+  </form>
+
+  <section class="sg-orders-results" aria-label="Filtered production orders">
+    {% include "sieger_ui/production_orders_pager.html" %}
+    {% if orders %}
+    <div class="sg-orders-scroll" role="region" aria-label="Production order table" tabindex="0">
+      <table class="sg-orders-table">
+        <thead><tr><th scope="col">Order / part</th><th scope="col">Shipment</th><th scope="col" class="num">Qty / planned</th><th scope="col">Due date</th><th scope="col">Planned delivery</th><th scope="col">Delivery status</th><th scope="col">Details</th></tr></thead>
+        <tbody>{% for o in orders %}<tr data-order="{{ o.name }}" data-state="{{ o.state }}">
+          <td><a href="{{ o.graph_url }}"><b>{{ o.name }}</b></a><small>{{ o.item_id }}</small><small class="sg-orders-description">{{ o.item__description|default:"" }}</small></td>
+          <td>{{ o.shipment_name }}<small>{{ o.shipment_tag }}</small></td>
+          <td class="num">{{ o.quantity|floatformat:"-2" }} / {% if o.plannedquantity is None %}&mdash;{% else %}{{ o.plannedquantity|floatformat:"-2" }}{% endif %}{% if o.short %}<small class="sg-orders-short">Incomplete qty</small>{% endif %}</td>
+          <td class="sg-orders-date">{{ o.due|date:"d M Y"|default:"Not recorded" }}<small>{{ o.due|date:"H:i" }}</small></td>
+          <td class="sg-orders-date">{{ o.deliverydate|date:"d M Y"|default:"Not planned" }}<small>{{ o.deliverydate|date:"H:i" }}</small></td>
+          <td><span class="sg-orders-state is-{{ o.state }}">{% if o.state == 'late' %}Late{% elif o.state == 'ontime' %}On time{% elif o.state == 'unplanned' %}Unplanned{% else %}Unknown{% endif %}</span>{% if o.state == 'late' %}<small>{% if o.late_days < 0.1 %}&lt; 0.1{% else %}{{ o.late_days|floatformat:1 }}{% endif %} days late</small>{% endif %}</td>
+          <td><a class="sg-orders-detail" href="{{ o.graph_url }}">Order &nearr;</a><a class="sg-orders-detail" href="{{ o.evidence_url }}">Constraints &nearr;</a></td>
+        </tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}{% include "sieger_ui/production_orders_pager.html" %}{% endif %}
+    {% else %}<div class="sg-orders-empty"><h2>No matching orders</h2><p>Try a different shipment or delivery status, or clear your search.</p><a class="sg-orders-button" href="{{ reset_url }}">Clear filters</a></div>{% endif %}
+  </section>
+  <p class="sg-orders-note">Delivery status compares the saved delivery date with the order's due date. Missing delivery dates are unplanned; incomplete quantities are marked separately.</p>
+</div>
+<script src="{{ STATIC_URL }}sieger_ui/production-orders.js?v=1"></script>
+{% endblock %}

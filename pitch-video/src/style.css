@@ -1,0 +1,12 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/manrope/800.css';
+
+* {box-sizing:border-box;}
+.eyebrow {font:700 16px/1.5 Inter,sans-serif;letter-spacing:2.7px;color:#ff6576;}
+.hero-heading {font:750 102px/1.12 Manrope,sans-serif;letter-spacing:-4px;margin:22px 0 0;}

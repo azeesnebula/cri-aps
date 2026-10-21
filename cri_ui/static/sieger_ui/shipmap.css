@@ -1,0 +1,737 @@
+/* ------------------------------------------------------------------
+   Sieger APS - the shipment map.
+
+   Loaded only on this screen, so nothing here can reach another page.
+
+   Same rule as sieger.css: frePPLe swaps its whole bootstrap bundle to
+   change theme and leaves no marker in the DOM, so every surface here
+   is a token or a translucent tint over whatever ground the active
+   theme paints, and text inherits the theme's colour. Correct on all
+   ten themes without knowing which is active.
+
+   One hard rule learned the hard way: a colour may only occupy the
+   FINAL slot of the `background` shorthand, and because these values
+   arrive through var(), an invalid shorthand fails at computed-value
+   time and resets the property to transparent - which once made every
+   card see-through and looked exactly like a z-index bug. So cards set
+   background-color and background-image separately, never the
+   shorthand.
+   ------------------------------------------------------------------ */
+
+:root {
+  --sg-mp-card: 232px;
+  --sg-mp-time: 96px;
+  --sg-mp-rail: 290px;
+}
+
+.sg-mp {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 86px);
+  min-height: 540px;
+}
+
+/* ================================================================== */
+/* 1. TOOLBAR                                                          */
+/* ================================================================== */
+
+.sg-mp-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+  padding: .55rem .75rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-bottom-width: 2px;
+  border-radius: 3px 3px 0 0;
+}
+.sg-mp-grp { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.sg-mp-top .sg-mp-grp + .sg-mp-grp {
+  padding-left: 1rem;
+  border-left: 1px solid var(--sg-rule-soft);
+}
+.sg-mp-spacer { flex: 1 1 auto; }
+
+.sg-mp-brand {
+  font-family: var(--sg-mono);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+.sg-mp-sub { font-size: .72rem; opacity: .6; }
+.sg-mp-step { font-size: .72rem; color: var(--sg-warn); font-weight: 600; }
+
+.sg-mp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .6rem;
+  font-family: var(--sg-mono);
+  font-size: .7rem;
+  letter-spacing: .04em;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.sg-mp-btn:hover { background: var(--sg-rule-soft); color: inherit;
+                   text-decoration: none; }
+.sg-mp-btn[disabled] { opacity: .4; cursor: default; }
+.sg-mp-btn-go { border-color: var(--sg-warn); color: var(--sg-warn); }
+.sg-mp-btn-go:hover { background: rgba(208, 138, 44, .12); }
+
+.sg-mp-find { position: relative; }
+.sg-mp-search {
+  width: 20rem;
+  max-width: 44vw;
+  padding: .32rem .6rem;
+  font-family: var(--sg-mono);
+  font-size: .76rem;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+}
+.sg-mp-search:focus { outline: 2px solid var(--sg-accent); outline-offset: -1px; }
+.sg-mp-hits {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  z-index: 40;
+  width: 24rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: .25rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+}
+.sg-mp-hits a {
+  display: flex;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .3rem .45rem;
+  font-size: .76rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.sg-mp-hits a:hover { background: var(--sg-surface-2); text-decoration: none; }
+.sg-mp-hits b { font-family: var(--sg-mono); font-weight: 600; }
+.sg-mp-hits em { font-style: normal; opacity: .55; font-size: .68rem; }
+.sg-mp-hits p { margin: .4rem .5rem; font-size: .74rem; opacity: .6; }
+
+/* ================================================================== */
+/* 2. THE THREE COLUMNS                                                */
+/*    The rail is a COLUMN, not an overlay - the previous version       */
+/*    floated it and it covered the nodes it was describing.            */
+/* ================================================================== */
+
+.sg-mp-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+  overflow: hidden;
+}
+
+/* ---- the time axis ---- */
+.sg-mp-time {
+  position: relative;
+  flex: 0 0 var(--sg-mp-time);
+  overflow: hidden;
+  background: var(--sg-surface-2);
+  border-right: 1px solid var(--sg-rule);
+  z-index: 2;
+}
+.sg-mp-time-in { position: absolute; inset: 0; will-change: transform; }
+.sg-mp-tick {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  padding-left: .5rem;
+  font-family: var(--sg-mono);
+  line-height: 1.15;
+  transform: translateY(-50%);
+}
+.sg-mp-tick b { display: block; font-size: .72rem; font-weight: 600; }
+.sg-mp-tick span { display: block; font-size: .58rem; opacity: .5; }
+/* The collapsed-gap label, so skipped time is stated not hidden. */
+.sg-mp-tgap {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  padding: .1rem .4rem;
+  font-family: var(--sg-mono);
+  font-size: .56rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--sg-accent);
+  opacity: .9;
+}
+
+/* ---- the map ---- */
+.sg-mp-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  background-color: var(--sg-surface);
+  background-image: radial-gradient(var(--sg-rule-soft) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.sg-mp-world { position: relative; }
+.sg-mp-wires {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.sg-mp-wire { fill: none; stroke-width: 1.6; opacity: .6; }
+.sg-mp-wire.w-ok { stroke: rgba(47, 163, 106, .6); }
+.sg-mp-wire.w-late { stroke: rgba(208, 138, 44, .7); }
+.sg-mp-wire.w-crit { stroke: rgba(217, 83, 79, .7); }
+.sg-mp-wire.is-share { stroke-dasharray: 5 4; }
+
+/* The band that replaces a long empty stretch. */
+.sg-mp-gap {
+  position: absolute;
+  left: 0;
+  height: 0;
+  border-top: 1px dashed var(--sg-accent);
+  opacity: .5;
+  pointer-events: none;
+}
+.sg-mp-gap span {
+  position: absolute;
+  left: 50%;
+  top: -.62rem;
+  transform: translateX(-50%);
+  padding: .08rem .5rem;
+  font-family: var(--sg-mono);
+  font-size: .58rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.sg-mp-msg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  opacity: .75;
+  pointer-events: none;
+}
+.sg-mp-msg .is-bad { color: var(--sg-bad); font-weight: 600; }
+
+/* ================================================================== */
+/* 3. CARDS                                                            */
+/* ================================================================== */
+
+.sg-mp-node {
+  position: absolute;
+  width: var(--sg-mp-card);
+  min-height: 76px;
+  box-sizing: border-box;
+  padding: .45rem .55rem .4rem;
+  background-color: var(--sg-surface-2);
+  background-image: linear-gradient(180deg,
+      rgba(255, 255, 255, .05), rgba(0, 0, 0, .035));
+  border: 1px solid var(--sg-rule);
+  border-left: 3px solid var(--sg-ok);
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .14);
+  cursor: pointer;
+  transition: box-shadow .12s ease, border-color .12s ease,
+              transform .12s ease, opacity .12s ease;
+}
+.sg-mp-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  border-color: var(--sg-accent);
+}
+.sg-mp-node.t-late { border-left-color: var(--sg-warn); }
+.sg-mp-node.t-crit { border-left-color: var(--sg-bad); }
+.sg-mp-node.is-sel { outline: 2px solid var(--sg-accent); outline-offset: 1px; }
+.sg-mp-node.is-loading { opacity: .55; }
+.sg-mp-node.is-faded { opacity: .2; }
+.sg-mp-node.is-flag {
+  border-color: var(--sg-bad);
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, .55), 0 4px 14px rgba(0, 0, 0, .25);
+}
+/* The card the delay walk has landed on. A standing ring, not a pulse:
+   the walk now OPENS the branch, so the planner is reading the card
+   rather than watching a camera, and a throbbing card under the cursor
+   is noise. */
+.sg-mp-node.is-focus {
+  border-color: var(--sg-warn);
+  box-shadow: 0 0 0 4px rgba(208, 138, 44, .8),
+              0 0 22px 4px rgba(208, 138, 44, .35),
+              0 6px 20px rgba(0, 0, 0, .3);
+  z-index: 6;
+}
+
+/* Shipments are the anchors of the whole picture. */
+.sg-mp-node.k-ship {
+  width: calc(var(--sg-mp-card) * 1.18);
+  min-height: 86px;
+  border-width: 1px;
+  border-left-width: 4px;
+  background-image: linear-gradient(135deg,
+      rgba(46, 139, 163, .18), rgba(46, 139, 163, .04) 60%);
+  box-shadow: 0 3px 16px rgba(46, 139, 163, .22), 0 2px 10px rgba(0, 0, 0, .2);
+}
+.sg-mp-node.k-group { background-image: linear-gradient(180deg,
+      rgba(255, 255, 255, .07), rgba(0, 0, 0, .03)); }
+.sg-mp-node.k-run { min-height: 70px; opacity: .97; }
+
+.sg-mp-hd {
+  display: flex;
+  align-items: flex-start;
+  gap: .3rem;
+  margin-bottom: .2rem;
+}
+.sg-mp-kind {
+  display: block;
+  font-family: var(--sg-mono);
+  font-size: .54rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .5;
+}
+.sg-mp-title {
+  display: block;
+  font-family: var(--sg-mono);
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.15;
+  word-break: break-all;
+}
+.sg-mp-hd > span:first-child { flex: 1 1 auto; min-width: 0; }
+
+.sg-mp-arrow {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: .8rem;
+  line-height: 1;
+  color: inherit;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sg-mp-arrow:hover { border-color: var(--sg-accent); color: var(--sg-accent); }
+.sg-mp-node.is-open .sg-mp-arrow {
+  background: var(--sg-accent);
+  border-color: var(--sg-accent);
+  color: #fff;
+}
+
+.sg-mp-meta { margin: .1rem 0 .3rem; font-size: .68rem; line-height: 1.4;
+              opacity: .8; }
+.sg-mp-meta b { font-family: var(--sg-mono); }
+.sg-mp-tags { display: flex; flex-wrap: wrap; gap: .22rem; }
+.sg-mp-pill {
+  display: inline-block;
+  padding: .08rem .35rem;
+  font-family: var(--sg-mono);
+  font-size: .56rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.sg-mp-pill.is-ok { border-color: rgba(47, 163, 106, .55); color: var(--sg-ok); }
+.sg-mp-pill.is-late { border-color: rgba(208, 138, 44, .6); color: var(--sg-warn); }
+.sg-mp-pill.is-crit { border-color: rgba(217, 83, 79, .6); color: var(--sg-bad); }
+.sg-mp-pill.is-share { border-color: rgba(232, 163, 61, .65);
+                       color: var(--sg-accent-in); }
+.sg-mp-pill.is-key { border-color: var(--sg-accent); color: var(--sg-accent); }
+
+.sg-mp-more {
+  margin-top: .3rem;
+  padding: 0;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  letter-spacing: .06em;
+  color: var(--sg-accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.sg-mp-more:hover { text-decoration: underline; }
+
+/* ================================================================== */
+/* 4. THE TROUBLE RAIL                                                 */
+/* ================================================================== */
+
+.sg-mp-rail {
+  flex: 0 0 var(--sg-mp-rail);
+  overflow-y: auto;
+  padding: .6rem .65rem 1rem;
+  background: var(--sg-surface-2);
+  border-left: 1px solid var(--sg-rule);
+}
+.sg-mp-rail-t {
+  margin: 0 0 .5rem;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  opacity: .6;
+}
+.sg-mp-blk {
+  padding: .5rem .55rem;
+  margin-bottom: .45rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-left: 3px solid var(--sg-bad);
+  border-radius: 4px;
+  cursor: default;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.sg-mp-blk:hover, .sg-mp-blk:focus {
+  border-color: var(--sg-bad);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+  outline: none;
+}
+.sg-mp-blk-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .4rem;
+  margin: 0 0 .25rem;
+}
+.sg-mp-blk-hd b { font-family: var(--sg-mono); font-size: .8rem; }
+.sg-mp-blk-hd span { font-size: .62rem; opacity: .65; white-space: nowrap; }
+.sg-mp-blk-d { margin: 0 0 .25rem; font-size: .64rem; opacity: .6; }
+.sg-mp-blk-s { margin: .2rem 0 0; font-size: .68rem; line-height: 1.45; }
+.sg-mp-blk-s i {
+  font-style: normal;
+  font-family: var(--sg-mono);
+  font-size: .54rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  opacity: .55;
+  margin-right: .25rem;
+}
+/* Where no vendor route exists the line is an ASK, not a gap report -
+   Sieger owns that decision and this tool is theirs. */
+.sg-mp-blk-s.is-ask {
+  padding: .3rem .4rem;
+  background: rgba(46, 139, 163, .09);
+  border-left: 2px solid var(--sg-accent);
+  border-radius: 2px;
+}
+.sg-mp-blk-note { margin: .4rem 0 0; font-size: .62rem; opacity: .55;
+                  line-height: 1.4; }
+
+/* ================================================================== */
+/* 5. LEGEND                                                           */
+/* ================================================================== */
+
+.sg-mp-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.1rem;
+  align-items: center;
+  padding: .45rem .2rem 0;
+  font-size: .68rem;
+  opacity: .78;
+}
+.sg-mp-key span { display: inline-flex; align-items: center; gap: .3rem; }
+.sg-mp-sw {
+  width: .85rem;
+  height: .62rem;
+  border-radius: 2px;
+  border-left: 3px solid var(--sg-ok);
+  background: var(--sg-surface-2);
+  border-top: 1px solid var(--sg-rule);
+  border-right: 1px solid var(--sg-rule);
+  border-bottom: 1px solid var(--sg-rule);
+}
+.sg-mp-sw.t-late { border-left-color: var(--sg-warn); }
+.sg-mp-sw.t-crit { border-left-color: var(--sg-bad); }
+.sg-mp-sw.t-share { border-left-color: var(--sg-accent-in);
+                    border-top-style: dashed; }
+
+@media (max-width: 1100px) {
+  .sg-mp-rail { flex-basis: 220px; }
+  .sg-mp-search { width: 13rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-mp-node { transition: none; }
+}
+
+/* The rail cards are navigation now, not just a legend. */
+.sg-mp-blk { cursor: pointer; }
+.sg-mp-blk:hover, .sg-mp-blk:focus-visible {
+  border-left-width: 5px;
+  transform: translateX(-2px);
+}
+.sg-mp-blk-hd b::after {
+  content: " \2192";
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.sg-mp-blk:hover .sg-mp-blk-hd b::after { opacity: .7; }
+
+/* ==================================================================
+   6. BRIEF MODE
+   The same map read from further away: a node becomes a dot, a name
+   and one number. Status moves from a left border to the dot, because
+   at this size a 3px border is the only thing you would see.
+   ================================================================== */
+
+.sg-mp.is-brief .sg-mp-node {
+  width: 150px;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .26rem .3rem .26rem .42rem;
+  border-left-width: 1px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .13);
+}
+.sg-mp.is-brief .sg-mp-node:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .22);
+  z-index: 5;
+}
+/* The shipment is still the anchor - a wider, heavier pill. */
+.sg-mp.is-brief .sg-mp-node.k-ship {
+  width: 182px;
+  padding: .34rem .38rem .34rem .5rem;
+  border-color: rgba(46, 139, 163, .6);
+}
+.sg-mp.is-brief .sg-mp-node.k-run { opacity: .95; }
+
+/* Status as a dot. */
+.sg-mp-dot {
+  flex: 0 0 auto;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: var(--sg-ok);
+}
+.sg-mp-node.t-late .sg-mp-dot { background: var(--sg-warn); }
+.sg-mp-node.t-crit .sg-mp-dot { background: var(--sg-bad); }
+.sg-mp.is-brief .sg-mp-node.k-ship .sg-mp-dot {
+  width: .62rem;
+  height: .62rem;
+}
+
+.sg-mp-bname {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--sg-mono);
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sg-mp.is-brief .sg-mp-node.k-ship .sg-mp-bname { font-size: .74rem; }
+
+.sg-mp-bnum {
+  flex: 0 0 auto;
+  font-family: var(--sg-mono);
+  font-size: .58rem;
+  letter-spacing: .02em;
+  padding: .05rem .26rem;
+  border-radius: 999px;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  opacity: .85;
+}
+.sg-mp-node.t-late .sg-mp-bnum {
+  color: var(--sg-warn);
+  border-color: rgba(208, 138, 44, .5);
+}
+.sg-mp-node.t-crit .sg-mp-bnum {
+  color: var(--sg-bad);
+  border-color: rgba(217, 83, 79, .55);
+}
+
+.sg-mp.is-brief .sg-mp-arrow {
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: .58rem;
+  line-height: 1;
+  padding: 0;
+}
+
+/* Thinner, more organic strands at this scale. */
+.sg-mp.is-brief .sg-mp-wire { stroke-width: 1.2; opacity: .5; }
+
+/* The gap bands and the focus ring both need to stay legible when the
+   nodes shrink. */
+.sg-mp.is-brief .sg-mp-node.is-focus {
+  box-shadow: 0 0 0 3px rgba(208, 138, 44, .85),
+              0 0 16px 3px rgba(208, 138, 44, .35);
+}
+
+/* ==================================================================
+   7. THE DETAIL PANEL
+   What "details ›" opens. An overlay on the right edge of the map,
+   not a column - a column would narrow the canvas and move every
+   card it is describing.
+   ================================================================== */
+
+.sg-mp-dt {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: min(430px, 92%);
+  background: var(--sg-surface);
+  border-left: 1px solid var(--sg-rule);
+  box-shadow: -12px 0 30px rgba(0, 0, 0, .25);
+}
+.sg-mp-dt[hidden] { display: none; }
+
+.sg-mp-dt-hd {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  padding: .6rem .7rem .5rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+.sg-mp-dt-cap { flex: 1 1 auto; min-width: 0; }
+.sg-mp-dt-kind {
+  margin: 0;
+  font-family: var(--sg-mono);
+  font-size: .54rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .5;
+}
+.sg-mp-dt-title {
+  margin: 0;
+  font-family: var(--sg-mono);
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-all;
+}
+.sg-mp-dt-x {
+  flex: 0 0 auto;
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: .95rem;
+  line-height: 1;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sg-mp-dt-x:hover { border-color: var(--sg-bad); color: var(--sg-bad); }
+
+.sg-mp-dt-bd {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: .55rem .7rem .8rem;
+}
+
+.sg-mp-dt-row {
+  display: flex;
+  gap: .6rem;
+  padding: .1rem 0;
+  font-size: .74rem;
+  line-height: 1.45;
+}
+.sg-mp-dt-row i {
+  flex: 0 0 7.4rem;
+  font-style: normal;
+  font-family: var(--sg-mono);
+  font-size: .56rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .55;
+  padding-top: .18rem;
+}
+.sg-mp-dt-row span {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.sg-mp-dt-sec { margin-top: .85rem; }
+.sg-mp-dt-sec-t {
+  margin: 0 0 .3rem;
+  padding-bottom: .2rem;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  opacity: .6;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+
+.sg-mp-dt-tb { width: 100%; border-collapse: collapse; font-size: .68rem; }
+.sg-mp-dt-tb th {
+  padding: .18rem .3rem;
+  font-family: var(--sg-mono);
+  font-size: .56rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-align: left;
+  opacity: .55;
+  border-bottom: 1px solid var(--sg-rule);
+}
+.sg-mp-dt-tb td {
+  padding: .18rem .3rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+  vertical-align: top;
+}
+.sg-mp-dt-tb th.num, .sg-mp-dt-tb td.num {
+  text-align: right;
+  font-family: var(--sg-mono);
+  white-space: nowrap;
+}
+.sg-mp-dt-tb a { color: var(--sg-accent); }
+
+.sg-mp-dt-note { margin: .3rem 0 0; font-size: .68rem; opacity: .7;
+                line-height: 1.45; }
+.sg-mp-dt-note.is-bad { color: var(--sg-bad); opacity: 1; }
+
+.sg-mp-dt-ft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .85rem;
+}
+
+/* The item code beside its human name on shipment cards. */
+.sg-mp-title .sg-mp-code {
+  font-size: .54rem;
+  font-weight: 400;
+  opacity: .55;
+  word-break: break-all;
+}

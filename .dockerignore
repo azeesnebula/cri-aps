@@ -1,0 +1,15 @@
+*
+!Dockerfile
+!djangosettings.py
+!docker/
+!docker/**
+!cri_ui/
+!cri_ui/**
+!cri-logo.gif
+!freppledb/
+!freppledb/execute/
+!freppledb/execute/**
+**/__pycache__/
+**/*.pyc
+**/*.bak
+cri_ui/static/sieger_ui/sieger-logo.png

@@ -1,0 +1,303 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Pre-release checkpoint panel.
+
+Every checkpoint card is a native <details> - no javascript needed to
+expand. The only scripting on this page is the two POSTs: acknowledging
+a checkpoint and the release itself, both plain fetch() with the CSRF
+cookie. Release flips proposed manufacturing orders in the window to
+'approved', which is what survives the next replan.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rl" id="sg-rl"
+     data-ack-url="{{ request.prefix }}/release/ack/"
+     data-action-url="{{ request.prefix }}/release/action/"
+     data-days="{{ days }}"
+     data-proposed="{{ proposed_count }}">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Release window</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    {% blocktrans with d=days %}Everything starting in the next {{ d }} days goes to the shop floor.
+    Each concern below must be resolved or consciously accepted before the plan is pushed.{% endblocktrans %}
+  </p>
+
+  {# --------------------------------------------------------- window bar #}
+  <div class="sg-sc-bar-top">
+    <div class="sg-sc-range">
+      <span class="sieger-k">{% trans "window" %}</span>
+      {% for w in window_choices %}
+      <a class="sieger-btn{% if w == days %} sieger-btn-go{% endif %}" href="?days={{ w }}">{{ w }}d</a>
+      {% endfor %}
+      <span class="sieger-stat sieger-stat-quiet">{% trans "until" %} {{ window_end|date:"D d M Y" }}</span>
+    </div>
+
+    <div class="sg-sc-facts">
+      {% if task %}
+      <span class="sieger-stat{% if not plan_ready %} sieger-stat-warn{% endif %}">
+        {% trans "last plan" %}: <b>{{ task.status }}</b>
+        {% if task.finished %}&middot; {{ task.finished|date:"D d M H:i" }}{% endif %}
+      </span>
+      {% else %}
+      <span class="sieger-stat sieger-stat-bad">{% trans "no plan has been run yet" %}</span>
+      {% endif %}
+      {% if last_release %}
+      <span class="sieger-stat sieger-stat-quiet">{% trans "last release" %}:
+        {{ last_release.lastmodified|date:"D d M H:i" }}{% if last_release.user %} &middot; {{ last_release.user.username }}{% endif %}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not plan_ready %}
+  <div class="sieger-card sieger-card-note sg-rl-blocked">
+    <p><b>{% trans "The plan is not ready." %}</b>
+    {% if task %}{% blocktrans with s=task.status %}The last planning run reports "{{ s }}" - release stays locked until a run finishes cleanly.{% endblocktrans %}
+    {% else %}{% trans "Run the planner from the cockpit first." %}{% endif %}</p>
+  </div>
+  {% endif %}
+
+  {# -------------------------------------------------------- checkpoints #}
+  <div class="sg-rl-cards">
+    {% for c in checkpoints %}
+    <details class="sg-rl-card{% if c.count == 0 %} is-clear{% elif c.ack %} is-acked{% elif c.ackable %} is-open{% else %} is-info{% endif %}"
+             {% if c.count > 0 and not c.ack %}open{% endif %}>
+      <summary>
+        <i class="sg-rl-dot" aria-hidden="true"></i>
+        <span class="sg-rl-title">{{ c.title }}</span>
+        <b class="sg-rl-count">{{ c.count }}</b>
+        {% if c.count == 0 %}
+        <span class="sg-rl-state">{% trans "clear" %}</span>
+        {% elif c.ack %}
+        <span class="sg-rl-state">{% trans "accepted by" %} {{ c.ack.user }} &middot; {{ c.ack.at|date:"D d M H:i" }}</span>
+        {% elif c.ackable %}
+        <span class="sg-rl-state">{% trans "needs resolution or acceptance" %}</span>
+        {% else %}
+        <span class="sg-rl-state">{% trans "for information" %}</span>
+        {% endif %}
+        {% if c.ackable and c.count > 0 and can_ack %}
+        <button type="button" class="sieger-btn sg-rl-ack"
+                data-checkpoint="{{ c.key }}" data-count="{{ c.count }}"
+                data-acked="{% if c.ack %}1{% else %}0{% endif %}">
+          {% if c.ack %}{% trans "withdraw acceptance" %}{% else %}{% trans "accept anyway" %}{% endif %}
+        </button>
+        {% endif %}
+      </summary>
+
+      <div class="sg-rl-body">
+        <p class="sg-rl-note">{{ c.note }}
+          {% for url, label in c.links %}<a class="sieger-btn" href="{{ url }}">{{ label }}</a>{% endfor %}
+        </p>
+
+        {% if c.rows %}
+        <div class="sg-rl-tbwrap">
+        {% if c.key == 'late' %}
+        <table class="sg-md-tb"><thead><tr><th>{% trans "order" %}</th><th>{% trans "part" %}</th><th>{% trans "due" %}</th><th>{% trans "planned" %}</th><th>{% trans "late" %}</th></tr></thead><tbody>
+          {% for r in c.rows %}
+          <tr><td><a href="{{ request.prefix }}/projects/{{ r.name|urlencode }}/">{{ r.name }}</a></td>
+              <td>{{ r.item_id|default:"&mdash;" }}</td>
+              <td>{{ r.due|date:"d M y" }}</td>
+              <td>{{ r.deliverydate|date:"d M y"|default:"&mdash;" }}</td>
+              <td>{{ r.delay_days }} d</td></tr>
+          {% endfor %}
+        </tbody></table>
+        {% elif c.key == 'overload' %}
+        <table class="sg-md-tb"><thead><tr><th>{% trans "machine" %}</th><th>{% trans "problem" %}</th><th>{% trans "from" %}</th><th>{% trans "to" %}</th></tr></thead><tbody>
+          {% for r in c.rows %}
+          <tr><td>{{ r.owner }}</td><td>{{ r.description }}</td>
+              <td>{{ r.startdate|date:"d M H:i" }}</td><td>{{ r.enddate|date:"d M H:i" }}</td></tr>
+          {% endfor %}
+        </tbody></table>
+        {% elif c.key == 'blocked' %}
+        <table class="sg-md-tb"><thead><tr><th>{% trans "order" %}</th><th>{% trans "part" %}</th><th>{% trans "due" %}</th></tr></thead><tbody>
+          {% for r in c.rows %}
+          <tr><td>{{ r.name }}</td><td>{{ r.item_id|default:"&mdash;" }}</td><td>{{ r.due|date:"d M y" }}</td></tr>
+          {% endfor %}
+        </tbody></table>
+        {% elif c.key == 'util' %}
+        <table class="sg-md-tb"><thead><tr><th>{% trans "machine" %}</th><th>{% trans "booked" %}</th><th>{% trans "available" %}</th><th>{% trans "load" %}</th></tr></thead><tbody>
+          {% for r in c.rows %}
+          <tr><td><a href="{{ request.prefix }}/resource/{{ r.resource|urlencode }}/">{{ r.resource }}</a></td>
+              <td>{{ r.busy_h }} h</td><td>{{ r.avail_h }} h</td><td>{{ r.util }}%</td></tr>
+          {% endfor %}
+        </tbody></table>
+        {% endif %}
+        </div>
+        {% if c.count > 50 %}<p class="sg-rl-more">{% blocktrans with n=c.count %}Showing the worst 50 of {{ n }}.{% endblocktrans %}</p>{% endif %}
+        {% else %}
+        <p class="sg-rl-empty">{% trans "Nothing here - this one is clear." %}</p>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+
+  {# ------------------------------------------------------- window jobs #}
+  <details class="sg-rl-card is-info">
+    <summary>
+      <i class="sg-rl-dot" aria-hidden="true"></i>
+      <span class="sg-rl-title">{% trans "jobs in the window" %}</span>
+      <b class="sg-rl-count">{{ proposed_count }}</b>
+      <span class="sg-rl-state">
+        {% for status, n in window_split.items %}{{ n }} {{ status }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+      </span>
+    </summary>
+    <div class="sg-rl-body">
+      <p class="sg-rl-note">{% trans "The proposed production runs a release would push. Already-approved work stays approved." %}</p>
+      {% if window_jobs %}
+      <div class="sg-rl-tbwrap">
+      <table class="sg-md-tb"><thead><tr><th>{% trans "run" %}</th><th>{% trans "part" %}</th><th>{% trans "from" %}</th><th>{% trans "to" %}</th><th>{% trans "qty" %}</th></tr></thead><tbody>
+        {% for j in window_jobs %}
+        <tr><td>{{ j.reference }}</td><td>{{ j.item_id|default:j.operation_id }}</td>
+            <td>{{ j.startdate|date:"d M H:i" }}</td><td>{{ j.enddate|date:"d M H:i" }}</td>
+            <td>{{ j.quantity }}</td></tr>
+        {% endfor %}
+      </tbody></table>
+      </div>
+      {% if proposed_count > 200 %}<p class="sg-rl-more">{% blocktrans with n=proposed_count %}Showing the first 200 of {{ n }}.{% endblocktrans %}</p>{% endif %}
+      {% else %}
+      <p class="sg-rl-empty">{% trans "Nothing proposed in this window." %}</p>
+      {% endif %}
+    </div>
+  </details>
+
+  {# ----------------------------------------------------------- release #}
+  <div class="sg-rl-foot">
+    <div class="sg-rl-foot-num">
+      <b>{{ proposed_count }}</b>
+      {% blocktrans with d=window_end|date:"D d M" %}proposed runs starting before {{ d }}{% endblocktrans %}
+    </div>
+    <div class="sg-rl-foot-note">
+      {% trans "Approved work survives the next replan - that is the freeze. Writing back to LN remains the export step (loader/export_schedule.py)." %}
+    </div>
+    <button type="button" class="sieger-btn sieger-btn-go sg-rl-go" id="sg-rl-go"
+            {% if not can_release %}disabled{% endif %}>
+      {% trans "release the window" %}
+    </button>
+    {% if not can_release %}
+    <p class="sg-rl-why">
+      {% if not plan_ready %}{% trans "waiting for a clean planning run" %}
+      {% elif open_checkpoints %}{% trans "open checkpoints:" %} {{ open_checkpoints|join:", " }}
+      {% elif proposed_count == 0 %}{% trans "nothing proposed in the window" %}
+      {% else %}{% trans "you need the change-operations permission" %}{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  {# ------------------------------------------------------------ confirm #}
+  <div class="sg-md" id="sg-rl-md" hidden>
+    <div class="sg-md-back" data-close></div>
+    <div class="sg-md-panel" role="dialog" aria-modal="true" aria-labelledby="sg-rl-md-title">
+      <button class="sg-md-x" type="button" data-close aria-label="{% trans 'close' %}">&times;</button>
+      <div class="sg-md-body">
+        <header class="sg-md-hd"><h2 id="sg-rl-md-title">{% trans "Release the window?" %}</h2></header>
+        <p>{% blocktrans with n=proposed_count d=window_end|date:"D d M Y" %}This approves {{ n }} proposed production runs starting before {{ d }}, plus their routing steps. The next replan will keep them exactly where they are.{% endblocktrans %}</p>
+        {% if checkpoints %}
+        <ul class="sg-md-why">
+          {% for c in checkpoints %}{% if c.ackable and c.count > 0 and c.ack %}
+          <li><b>{{ c.title }}</b> &mdash; {{ c.count }} {% trans "accepted by" %} {{ c.ack.user }}</li>
+          {% endif %}{% endfor %}
+        </ul>
+        {% endif %}
+        <div id="sg-rl-md-err" class="sg-rl-err" hidden></div>
+        <footer class="sg-md-ft">
+          <button type="button" class="sieger-btn sieger-btn-go" id="sg-rl-confirm">{% trans "confirm release" %}</button>
+          <button type="button" class="sieger-btn" data-close>{% trans "cancel" %}</button>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("sg-rl");
+  if (!root) return;
+
+  function getCookie(name) {
+    var m = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+    return m ? decodeURIComponent(m.pop()) : "";
+  }
+
+  function post(url, payload, ok, bad) {
+    fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+      .then(function (r) { if (r.s === 200 && r.d.ok) ok(r.d); else bad(r.d, r.s); })
+      .catch(function (e) { bad({ error: String(e) }, 0); });
+  }
+
+  // -- acknowledge / withdraw
+  Array.prototype.forEach.call(root.querySelectorAll(".sg-rl-ack"), function (btn) {
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();          // do not toggle the <details>
+      btn.disabled = true;
+      post(root.dataset.ackUrl, {
+        checkpoint: btn.dataset.checkpoint,
+        count: parseInt(btn.dataset.count, 10) || 0,
+        days: parseInt(root.dataset.days, 10) || 3,
+        undo: btn.dataset.acked === "1"
+      }, function () { location.reload(); },
+         function (d) { btn.disabled = false; alert(d.error || "failed"); });
+    });
+  });
+
+  // -- release confirm flow
+  var go = document.getElementById("sg-rl-go");
+  var md = document.getElementById("sg-rl-md");
+  var err = document.getElementById("sg-rl-md-err");
+  if (go && md) {
+    go.addEventListener("click", function () { md.hidden = false; });
+    md.addEventListener("click", function (ev) {
+      if (ev.target.hasAttribute("data-close")) md.hidden = true;
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && !md.hidden) md.hidden = true;
+    });
+    var confirmBtn = document.getElementById("sg-rl-confirm");
+    confirmBtn.addEventListener("click", function () {
+      confirmBtn.disabled = true;
+      err.hidden = true;
+      post(root.dataset.actionUrl, {
+        days: parseInt(root.dataset.days, 10) || 3,
+        expected: parseInt(root.dataset.proposed, 10)
+      }, function () { location.reload(); },
+         function (d) {
+           confirmBtn.disabled = false;
+           err.hidden = false;
+           err.textContent = {
+             plan_running: "A planning run is in progress - wait for it to finish.",
+             checkpoints_open: "Checkpoints reopened: " + (d.open || []).join(", ") + ". Reload the page.",
+             stale: "The plan changed while this page was open (" + d.proposed + " runs now). Reload the page.",
+             nothing_to_release: "Nothing left to release - reload the page.",
+             forbidden: "You do not have permission to release."
+           }[d.error] || ("Release failed: " + (d.error || "unknown"));
+         });
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+<article class="sg-work-card" id="{{ b.anchor }}" data-blocker-panel aria-labelledby="{{ b.anchor }}-title">
+  <span class="sg-work-eyebrow">Recorded evidence</span><h2 id="{{ b.anchor }}-title" tabindex="-1">{{ b.kind|capfirst }}</h2>
+  <p class="sg-work-owner">{{ b.owner }}</p>
+  <p>{{ b.description }}</p>
+  <p class="sg-work-note">Recorded window: {{ b.first_conflict|date:"d M Y H:i"|default:"Not recorded" }} &ndash; {{ b.last_conflict|date:"d M Y H:i"|default:"Not recorded" }}</p>
+  <p class="sg-work-callout"><b>Next check:</b> {{ b.next_check }}</p>
+  <div class="sg-work-badges"><span>{{ b.late }} late</span><span>{{ b.unplanned }} unplanned</span><span>{{ b.on_time }} on time</span></div>
+  {% if b.material %}
+  <dl class="sg-work-facts">
+    <div><dt>Purchased material</dt><dd>{{ b.material.item }} &middot; {{ b.material.location }}</dd></div>
+    <div><dt>Supplier</dt><dd>{{ b.material.supplier }}</dd></div>
+    <div><dt>Opening stock</dt><dd>{% for stock in b.material.stock %}{{ stock.onhand|floatformat:"-2" }}{% empty %}No record at this location{% endfor %}</dd></div>
+    <div><dt>Purchase lead time</dt><dd>{% for supply in b.material.suppliers %}{{ supply.leadtime|default_if_none:"Not recorded" }}<small>Effective {{ supply.effective_start|date:"d M Y"|default:"unbounded" }} &ndash; {{ supply.effective_end|date:"d M Y"|default:"unbounded" }}</small>{% if not forloop.last %}<br>{% endif %}{% empty %}No matching supplier rule{% endfor %}</dd></div>
+  </dl>
+  {% endif %}
+  {% if b.unplanned %}<p class="sg-work-callout">This conflict is recorded, but the complete reason no feasible finish was found is not established. The lateness limit is a boundary, not a root cause.</p>{% endif %}
+  <nav class="sg-work-actions" aria-label="Investigate {{ b.kind }}">{% for link in b.links %}<a class="sg-work-button" href="{{ link.url }}">{{ link.label }} &nearr;</a>{% endfor %}</nav>
+  <details><summary>Affected orders ({{ b.orders|length }})</summary>
+    <div data-page-table data-page-size="5"><div class="sg-evidence-scroll" role="region" aria-label="Orders affected by {{ b.kind }}" tabindex="0"><table class="sg-ship-tb"><thead><tr><th scope="col">Order</th><th scope="col">State</th><th scope="col" class="n">Quantity</th></tr></thead><tbody>{% for o in b.orders %}<tr data-page-row><td><a href="{{ o.constraint_url }}">{{ o.name }} &nearr;</a></td><td>{{ o.state|capfirst }}{% if o.short %}<small>Incomplete quantity</small>{% endif %}</td><td class="n">{{ o.quantity|floatformat:"-2" }}</td></tr>{% endfor %}</tbody></table></div><div data-page-controls></div></div>
+  </details>
+  <details open><summary>Conflict dates &amp; engine descriptions ({{ b.records|length }})</summary>
+    <div data-page-table data-page-size="4"><div class="sg-evidence-scroll" role="region" aria-label="Recorded conflict details" tabindex="0"><table class="sg-ship-tb"><thead><tr><th scope="col">Order</th><th scope="col">Conflict window</th><th scope="col">Engine description</th></tr></thead><tbody>{% for record in b.records %}<tr data-page-row><td>{{ record.demand }}</td><td>{{ record.startdate|date:"d M Y H:i" }}<small>to {{ record.enddate|date:"d M Y H:i" }}</small></td><td>{{ record.description }}</td></tr>{% endfor %}</tbody></table></div><div data-page-controls></div></div>
+  </details>
+</article>

@@ -1,0 +1,177 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Deliver on time - shipment-first. Three blocks, deliberately small:
+the promise in one line, the machines in the way as cards, then every
+shipment with its own causes behind a fold-out. Anything deeper links to
+the screen that already does it (plan board, build graph, bottlenecks)
+rather than repeating it here.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block extrastyle %}{{block.super}}
+<style>
+  .sg-dl { max-width: 1200px; padding: 1.4rem .25rem 3rem; }
+  .sg-dl-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                 gap: .7rem; margin: .9rem 0 1.6rem; }
+  .sg-dl-card { padding: .8rem .95rem; background: var(--sg-surface);
+                border: 1px solid var(--sg-rule-soft); border-left: 3px solid var(--sg-bad);
+                border-radius: 3px; }
+  .sg-dl-card h3 { margin: 0 0 .1rem; font-family: var(--sg-mono); font-size: .95rem; }
+  .sg-dl-card .d { font-size: .74rem; opacity: .65; margin: 0 0 .5rem; }
+  .sg-dl-fix { margin: .45rem 0 0; font-size: .8rem; line-height: 1.45; }
+  .sg-dl-fix b { font-family: var(--sg-mono); }
+  .sg-dl-fix .k { font-family: var(--sg-mono); font-size: .6rem; letter-spacing: .1em;
+                  text-transform: uppercase; opacity: .55; margin-right: .3rem; }
+  .sg-dl-hit { display: inline-block; margin-top: .2rem; }
+  .sg-dl-why { margin: .3rem 0 .4rem; padding-left: 1.1rem; font-size: .8rem; }
+  .sg-dl-why li { margin: .12rem 0; }
+  .sg-dl details summary { cursor: pointer; color: var(--sg-accent); font-size: .78rem; }
+  .sg-dl td .sg-dl-exp { margin: .4rem 0 .2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sg-rp sg-dl">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Deliver on time</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  {# ---------------------------------------------- A. the promise #}
+  <div class="sg-rp-facts">
+    <span class="sieger-stat"><b>{{ total }}</b> shipments promised
+      {{ due_lo|date:"d M" }} &ndash; {{ due_hi|date:"d M" }}</span>
+    <span class="sieger-stat {% if on_time %}sieger-stat-ok{% else %}sieger-stat-bad{% endif %}">
+      <b>{{ on_time }}</b> on time</span>
+    {% if avg_late %}<span class="sieger-stat sieger-stat-warn">
+      <b>{{ avg_late }}</b> days late, average</span>{% endif %}
+    {% if completes %}<span class="sieger-stat sieger-stat-quiet">
+      everything done {{ completes|date:"d M Y" }}</span>{% endif %}
+  </div>
+
+  {# ------------------------------------- B. what is in the way #}
+  {% if cards %}
+  <h2 class="sg-rp-h2">What is in the way</h2>
+  <div class="sg-dl-cards">
+    {% for c in cards %}
+    <div class="sg-dl-card">
+      <h3>{{ c.machine }}</h3>
+      <p class="d">{{ c.descr|default:"&nbsp;" }}</p>
+      <span class="sieger-stat sieger-stat-bad sg-dl-hit">blocks
+        <b>{{ c.ships_hit }}</b> of {{ total }} shipment{{ total|pluralize }}
+        ({{ c.orders_hit }} order{{ c.orders_hit|pluralize }})</span>
+      {% if c.load %}<span class="sieger-stat sg-dl-hit">
+        <b>{{ c.load|floatformat:0 }}%</b> busy
+        &middot; {{ c.machines }} machine{{ c.machines|pluralize }}</span>{% endif %}
+
+      {% comment %}Three honest cases, matching improve.py's arithmetic:
+      a purchase is only named when even running flat out cannot cover the
+      hours; an overloaded group that flat-out running WOULD cover needs
+      shifts, not machines; and a group under its ceiling is a local
+      pile-up, which sequencing fixes for free.{% endcomment %}
+      <p class="sg-dl-fix"><span class="k">add capacity</span>
+        {% if c.extra %}
+          needs about <b>{{ c.extra }}</b> more machine{{ c.extra|pluralize }}
+          &mdash; even running every hour, the current
+          {{ c.machines }} cannot cover the work.
+        {% elif c.load and c.load > 100 %}
+          more <b>shifts</b>, not more machines: its
+          {{ c.machines }} machine{{ c.machines|pluralize }} can cover this
+          by working more hours (see What&nbsp;to&nbsp;do&nbsp;next).
+        {% else %}
+          the hours fit the window overall &mdash; this is jobs piling up at
+          the same moment, so re-sequencing helps before buying does.
+        {% endif %}
+      </p>
+      <p class="sg-dl-fix"><span class="k">subcontract</span>
+        {% if c.vendor %}
+          a vendor route exists: <b>{{ c.vendor }}</b>.
+        {% else %}
+          no subcontractor is modelled for this work &mdash; naming one is
+          C.R.I Pumps' decision, and once named it can be tested as a what-if.
+        {% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="sg-rp-note">
+    Ranked by shipments blocked &mdash; the engine's own records of where
+    orders could not be placed on time. Depth:
+    <a href="{{request.prefix}}/machine-schedule/">plan board</a> &middot;
+    <a href="{{request.prefix}}/bottlenecks/">bottlenecks</a> &middot;
+    <a href="{{request.prefix}}/improve/">what to do next</a>.
+  </p>
+  {% endif %}
+
+  {# ------------------------------------------ C. the shipments #}
+  <h2 class="sg-rp-h2">The shipments, worst first</h2>
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr>
+          <th>shipment</th>
+          <th class="num">orders</th>
+          <th>due</th>
+          <th>will ship</th>
+          <th class="num">late by</th>
+          <th>status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in ships %}
+        <tr>
+          <td class="mono">
+            <details>
+              <summary>{{ s.tag }}</summary>
+              <div class="sg-dl-exp">
+                {% if s.causes %}
+                <ul class="sg-dl-why">
+                  {% for c in s.causes %}
+                  <li>{{ c.line }} &mdash; {{ c.orders }} order{{ c.orders|pluralize }} held up</li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="sg-dl-why">The engine recorded no blocker for this
+                  shipment{% if s.late %} &mdash; its lateness comes from queueing
+                  spread across many machines{% endif %}.</p>
+                {% endif %}
+                {% if s.worst_order %}
+                <a class="sieger-btn"
+                   href="{{request.prefix}}/build-graph/{{ s.worst_order|urlencode }}/">
+                  follow its slowest order ({{ s.worst_order }})</a>
+                {% endif %}
+              </div>
+            </details>
+          </td>
+          <td class="num">{{ s.orders }}</td>
+          <td>{{ s.due|date:"d M Y"|default:"&mdash;" }}</td>
+          <td>{{ s.finish|date:"d M Y"|default:"&mdash;" }}</td>
+          <td class="num{% if s.late %} sg-rp-warncell{% endif %}">
+            {% if s.late_days %}{{ s.late_days }} d{% else %}&mdash;{% endif %}</td>
+          <td>
+            {% if s.unplanned %}<span class="sieger-stat sieger-stat-bad">{{ s.unplanned }} unplanned</span>
+            {% elif s.late %}<span class="sieger-stat sieger-stat-warn">late</span>
+            {% else %}<span class="sieger-stat sieger-stat-ok">on time</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="sg-rp-note">
+    Click a shipment for why it is late. &ldquo;Will ship&rdquo; is when its
+    last order finishes &mdash; a shipment is only as good as its worst part.
+  </p>
+
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block bodyclass %}login{% endblock %}
+{% block content_title %}{% endblock %}
+{% block messages %}{% endblock %}
+{% block extrahead %}{% endblock %}
+{% block content %}
+<main class="cri-login">
+  <section class="cri-login-story" aria-label="C.R.I Pumps production planning">
+    <a class="cri-login-wordmark" href="{{ request.prefix }}/" aria-label="C.R.I Pumps home"><img src="{{ STATIC_URL }}cri_ui/cri-logo.gif" alt="C.R.I Pumps" width="270" height="67"></a>
+    <div>
+      <p class="cri-login-kicker">Manufacturing intelligence</p>
+      <h1>Precision in every plan.</h1>
+      <div class="cri-login-rule"></div>
+      <p>One workspace for C.R.I Pumps production, machine capacity and delivery commitments. Turn your manufacturing data into a clear plan of action.</p>
+    </div>
+    <footer>C.R.I Pumps &nbsp; / &nbsp; Production Planning</footer>
+  </section>
+  <section class="cri-login-panel" aria-labelledby="cri-sign-in">
+    <div class="cri-login-form">
+      <span class="sieger-eyebrow">C.R.I Pumps workspace</span>
+      <h2 id="cri-sign-in">Welcome back</h2>
+      <p>Sign in to your production planning workspace.</p>
+      {% if form.errors %}<div class="cri-login-errors" role="alert">{% if form.non_field_errors %}{{ form.non_field_errors }}{% else %}{% trans "Please check your username and password." %}{% endif %}</div>{% endif %}
+      {% for message in messages %}<div class="alert {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+      <form action="{{ request.prefix }}{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username">{% trans "Username" %}</label>
+          <input class="form-control" id="id_username" name="username" type="text" autocomplete="username" maxlength="254" value="{{ form.username.value|default:'' }}" required autofocus {% if form.username.errors %}aria-invalid="true" aria-describedby="username-errors"{% endif %}>
+          {% if form.username.errors %}<div id="username-errors" class="cri-login-errors">{{ form.username.errors }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <label for="id_password">{% trans "Password" %}</label>
+          <input class="form-control" id="id_password" name="password" type="password" autocomplete="current-password" required {% if form.password.errors %}aria-invalid="true" aria-describedby="password-errors"{% endif %}>
+          {% if form.password.errors %}<div id="password-errors" class="cri-login-errors">{{ form.password.errors }}</div>{% endif %}
+        </div>
+        <input type="hidden" name="next" value="{{ request.prefix }}{{ next }}">
+        <div class="cri-login-options">
+          {% setting "SESSION_COOKIE_AGE" as persistent_cookie %}
+          {% if persistent_cookie %}<label><input class="form-check-input" type="checkbox" name="remember_me" value="false"> {% trans "Remember Me" %}</label>{% endif %}
+          <a href="{{ request.prefix }}/reset_password/">{% trans "Forgot your password?" %}</a>
+        </div>
+        <button class="btn btn-primary" type="submit">{% trans "Sign in" %} &rarr;</button>
+      </form>
+      <p class="cri-login-note">Production planning &middot; Capacity visibility &middot; Delivery control</p>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,320 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Start dates - the latest each shipment can start, and whether that is
+still possible.
+
+STRIPPED ON PURPOSE (7 Oct 2026). The first version carried nine columns
+and three paragraphs of explanation, and the first real user found it
+confusing - one column needed three rounds of explanation and was then
+asked to be removed. So the table now holds only what a planner acts on:
+when is it due, when will it ship, when must it start, how many days are
+left. Everything that explains or qualifies a number (the floor breakdown,
+min lead, earliest finish, the data caveats, the Measure control) lives in
+each row's fold-out, where it is read by choice rather than endured.
+
+The two kinds of dates are unchanged underneath: ships/late come from the
+last solve and move with every replan; start by / days left are arithmetic
+over the shipment's own routing and BOM. Measure bridges them by
+replanning a copy (improve.prove). Nothing predicts.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<style>
+  .sg-sd-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                   margin: 0 0 12px; font-size: .84rem; }
+  .sg-sd-filters a { padding: 3px 10px; border: 1px solid var(--sg-rule, #d4dadd);
+                     border-radius: 3px; text-decoration: none;
+                     color: var(--sg-ink-2, #3b474d); }
+  .sg-sd-filters a.is-on { background: var(--sg-surface-2, #eef1f2);
+                           border-color: var(--sg-ink-2, #3b474d); font-weight: 600; }
+  .sg-sd-filters input { padding: 3px 8px; border: 1px solid var(--sg-rule, #d4dadd);
+                         border-radius: 3px; min-width: 180px; }
+
+  table.sg-sd-t { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  table.sg-sd-t th { text-align: left; font-size: .68rem; letter-spacing: .06em;
+                     text-transform: uppercase; color: var(--sg-muted, #6b7a80);
+                     border-bottom: 1px solid var(--sg-rule, #d4dadd);
+                     padding: 5px 8px; white-space: nowrap; }
+  table.sg-sd-t td { padding: 6px 8px; vertical-align: top;
+                     border-bottom: 1px solid var(--sg-rule-soft, #e6eaeb); }
+  table.sg-sd-t td.n { text-align: right; font-variant-numeric: tabular-nums;
+                       white-space: nowrap; }
+
+  .sg-sd-v { font-size: .72rem; padding: 2px 7px; border-radius: 3px;
+             white-space: nowrap; }
+  .sg-sd-v.ok { background: rgba(46,107,79,.12); color: #2e6b4f; }
+  .sg-sd-v.tight { background: rgba(168,114,12,.13); color: #a8720c; }
+  .sg-sd-v.impossible { background: rgba(166,58,50,.11); color: #a63a32; }
+  .sg-sd-v.none { background: var(--sg-surface-2, #eef1f2);
+                  color: var(--sg-muted, #6b7a80); }
+
+  .sg-sd-detail { margin: 6px 0 2px; font-size: .8rem;
+                  color: var(--sg-ink-2, #3b474d); }
+  .sg-sd-detail summary { cursor: pointer; color: var(--sg-muted, #6b7a80);
+                          font-size: .76rem; }
+  .sg-sd-sum { margin: 8px 0 0; line-height: 1.55; }
+  .sg-sd-sum b { font-variant-numeric: tabular-nums; }
+  .sg-sd-caveat { color: #a8720c; }
+
+  .sg-sd-measure { display: flex; gap: 6px; align-items: center; margin-top: 8px;
+                   flex-wrap: wrap; }
+  .sg-sd-measure input[type=date] { padding: 2px 6px; font-size: .8rem;
+                  border: 1px solid var(--sg-rule, #d4dadd); border-radius: 3px; }
+  .sg-sd-out { margin: 6px 0 0; font-size: .8rem; }
+  .sg-sd-out.is-bad { color: #a63a32; }
+  .sg-sd-out.is-work { color: var(--sg-muted, #6b7a80); font-style: italic; }
+
+  .sg-sd-pager { display: flex; gap: 14px; align-items: center; margin: 14px 0;
+                 font-size: .84rem; }
+</style>
+
+<div class="sg-rp" id="sg-sd"
+     data-prove-url="{{request.prefix}}/improve/prove/"
+     data-status-url="{{request.prefix}}/improve/status/">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Start dates</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan starts</span>
+      <span class="sieger-v">{{ now|date:"D d M Y" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    The last day each shipment can start cutting and still make its
+    Target Date. Every projected date below assumes the plan that is
+    loaded right now. Open a row for how that was worked out &mdash; or
+    to <b>Measure</b> a start date for real.
+  </p>
+
+  <div class="sg-rp-facts">
+    <span class="sieger-stat"><b>{{ total }}</b> shipments</span>
+    {% if impossible %}<span class="sieger-stat sieger-stat-bad">
+      <b>{{ impossible }}</b> cannot meet their date</span>{% endif %}
+    {% if overdue_start %}<span class="sieger-stat sieger-stat-warn">
+      <b>{{ overdue_start }}</b> must already be running</span>{% endif %}
+    {% if suspect %}<span class="sieger-stat sieger-stat-quiet">
+      <b>{{ suspect }}</b> withheld &mdash; bad BOM data</span>{% endif %}
+  </div>
+
+  <div class="sg-sd-filters">
+    <a href="?show=all{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       class="{% if show == 'all' %}is-on{% endif %}">all</a>
+    <a href="?show=late{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       class="{% if show == 'late' %}is-on{% endif %}">late or unplanned</a>
+    <a href="?show=impossible{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       class="{% if show == 'impossible' %}is-on{% endif %}">cannot meet date</a>
+    <form method="get" style="display:inline-flex;gap:6px">
+      <input type="hidden" name="show" value="{{ show }}">
+      <label style="display:inline-flex;align-items:center;gap:4px">
+        <span class="sieger-k">shipment</span>
+        <select name="dsq" onchange="this.form.q.value='';this.form.submit()"
+                style="max-width:260px">
+          <option value="">all shipments</option>
+          {% for t, d in dsq_options %}
+          <option value="{{ t }}"{% if t == q %} selected{% endif %}>
+            {{ d|default:t }} ({{ t }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <input type="text" name="q" value="{{ q }}" placeholder="or find a shipment&hellip;">
+      <button type="submit" class="sieger-btn">find</button>
+    </form>
+    <span style="color:var(--sg-muted,#6b7a80)">{{ shown }} shown, least time left first</span>
+  </div>
+
+  <div class="sg-rp-tblwrap">
+    <table class="sg-sd-t">
+      <thead>
+        <tr>
+          <th>shipment</th>
+          <th>Target Date</th>
+          <th>Projected Ship</th>
+          <th class="n">Days late</th>
+          <th>Start cutting by</th>
+          <th class="n">Days left</th>
+          <th>status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page %}
+        <tr>
+          <td class="mono">
+            {% if r.name %}<b>{{ r.name }}</b><br>{% endif %}{{ r.tag }}
+            {% if r.orders > 1 %}
+            <span style="color:var(--sg-muted,#6b7a80)">&middot; {{ r.orders }} production orders</span>{% endif %}
+            <details class="sg-sd-detail">
+              <summary>details</summary>
+              <p class="sg-sd-sum">
+                {% if r.peak_qty %}
+                  <span class="sg-sd-caveat">The parts list for this shipment
+                  multiplies out to {{ r.peak_qty }} parts on one
+                  branch &mdash; not believable, so no dates are shown. This is
+                  a data problem, not a planning one.</span>
+                {% else %}
+                  {% if r.start_by %}This plan: cuts {{ r.plan_cut|date:"d M" }}
+                    &rarr; ships {{ r.finish|date:"d M" }}, {{ r.plan_flow }} days.
+                    <b>Start by {{ r.start_by|date:"d M Y" }} &rarr; makes the
+                    {{ r.due|date:"d M" }} date.</b><br>{% endif %}
+                  Fastest possible: <b>{{ r.lead }}</b> days
+                  {% if r.earliest %}(start {{ now|date:"d M Y" }} &rarr; done
+                    <b>{{ r.earliest|date:"d M Y" }}</b>){% endif %}<br>
+                  {% if r.orders > 1 %}Slowest production order: <b>{{ r.floor_member }}</b>.<br>{% endif %}
+                  Buying parts: <b>{{ r.buy_days }}</b> days{% if r.pole %}
+                    (longest: {{ r.pole }}){% endif %}<br>
+                  Machining: <b>{{ r.mach_hours }}</b> h &rarr;
+                    <b>{{ r.mach_days }}</b> days on the calendar<br>
+                  Moving between steps: <b>{{ r.transfer_days }}</b> days
+                  {% if r.zero_steps %}<br><span class="sg-sd-caveat">
+                    {{ r.zero_steps }} of {{ r.steps }} steps carry no cycle
+                    time &mdash; the real time is longer than this.</span>{% endif %}
+                {% endif %}
+              </p>
+              <div class="sg-sd-measure">
+                <input type="date" value="{{ r.suggest|date:'Y-m-d' }}"
+                       min="{{ now|date:'Y-m-d' }}">
+                <button type="button" class="sd-measure sieger-btn sieger-btn-go"
+                        data-tag="{{ r.tag }}">Measure</button>
+                <span style="font-size:.74rem;color:var(--sg-muted,#6b7a80)">
+                  replans a copy with this start &mdash; takes minutes
+                </span>
+              </div>
+              <p class="sg-sd-out"{% if not r.measured_text %} hidden{% endif %}>{{ r.measured_text }}</p>
+            </details>
+          </td>
+          <td>{{ r.due|date:"d M Y"|default:"&mdash;" }}</td>
+          <td>
+            {% if r.finish %}{{ r.finish|date:"d M Y" }}{% else %}&mdash;{% endif %}
+            {% if r.plan_cut %}<br><small style="color:var(--sg-muted,#6b7a80)">
+              cutting starts {{ r.plan_cut|date:"d M" }}</small>{% endif %}
+            {% if r.unplanned %}<span class="sg-sd-v none">{{ r.unplanned }} unplanned</span>{% endif %}
+          </td>
+          <td class="n">{% if r.delay_days > 0 %}{{ r.delay_days }} d{% else %}&mdash;{% endif %}</td>
+          <td>
+            {% if r.must_start %}<b>{{ r.must_start|date:"d M Y" }}</b>{% else %}&mdash;{% endif %}
+            {% if r.start_by %}<span style="font-size:.62rem;color:var(--sg-muted,#6b7a80)">(measured)</span>{% endif %}
+          </td>
+          <td class="n">{% if r.slack is not None %}{{ r.slack }} d{% else %}&mdash;{% endif %}</td>
+          <td><span class="sg-sd-v {{ r.vclass }}">{{ r.verdict }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="color:var(--sg-muted,#6b7a80)">
+          Nothing matches this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page.paginator.num_pages > 1 %}
+  <div class="sg-sd-pager">
+    {% if page.has_previous %}
+      <a href="?page={{ page.previous_page_number }}{{ querystring }}">&larr; previous</a>
+    {% endif %}
+    <span>page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+      <a href="?page={{ page.next_page_number }}{{ querystring }}">next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <p class="sg-rp-note">
+    These floors assume an empty plant; whether the machines are actually
+    free is what <b>Measure</b> checks, on a copy, for real.
+  </p>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById("sg-sd");
+  if (!root) return;
+
+  function token() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : "";
+  }
+
+  function watch(out, key) {
+    fetch(root.dataset.statusUrl)
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        if (s.key && s.key !== key) return;        // someone else's run
+        if (!s.done) {
+          out.hidden = false;
+          out.className = "sg-sd-out is-work";
+          out.textContent = (s.phase === "copying"
+            ? "Copying the plan…"
+            : "Replanning the copy… " + (s.status || "")) +
+            " this takes a few minutes.";
+          setTimeout(function () { watch(out, key); }, 5000);
+          return;
+        }
+        if (s.phase === "failed" || s.error) {
+          out.hidden = false;
+          out.className = "sg-sd-out is-bad";
+          out.textContent = s.error || "The measurement failed.";
+          return;
+        }
+        // Finished: the stored sentence is rendered server-side, so the
+        // simplest honest refresh is the page itself.
+        out.className = "sg-sd-out";
+        out.textContent = "Measured. Reloading…";
+        location.reload();
+      })
+      .catch(function (e) {
+        out.hidden = false;
+        out.className = "sg-sd-out is-bad";
+        out.textContent = "Lost contact while measuring (" + e.message + ").";
+      });
+  }
+
+  root.addEventListener("click", function (ev) {
+    var btn = ev.target.closest(".sd-measure");
+    if (!btn) return;
+    var box = btn.closest(".sg-sd-measure");
+    var out = box.parentElement.querySelector(".sg-sd-out");
+    var date = box.querySelector("input[type=date]").value;
+    var key = "start:" + btn.dataset.tag;
+
+    if (!date) {
+      out.hidden = false;
+      out.className = "sg-sd-out is-bad";
+      out.textContent = "Pick a start date first.";
+      return;
+    }
+    out.hidden = false;
+    out.className = "sg-sd-out is-work";
+    out.textContent = "Starting…";
+
+    fetch(root.dataset.proveUrl, {
+      method: "POST",
+      headers: {"X-CSRFToken": token(),
+                "Content-Type": "application/x-www-form-urlencoded"},
+      body: "key=" + encodeURIComponent(key) +
+            "&date=" + encodeURIComponent(date)
+    })
+      .then(function (r) {
+        return r.json().then(function (j) { return {ok: r.ok, data: j}; });
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          out.className = "sg-sd-out is-bad";
+          out.textContent = res.data.error || "Could not start.";
+          return;
+        }
+        watch(out, key);
+      })
+      .catch(function (e) {
+        out.className = "sg-sd-out is-bad";
+        out.textContent = "Could not start (" + e.message + ").";
+      });
+  });
+})();
+</script>
+{% endblock %}

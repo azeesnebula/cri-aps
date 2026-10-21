@@ -1,0 +1,85 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Delivery sequences</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    When each delivery sequence completes, from the current plan.
+    A sequence's completion is the latest planned delivery among its orders.
+  </p>
+
+  {% if tagged_count == 0 %}
+  <div class="sieger-card sieger-card-note">
+    <p><strong>No order carries a delivery-sequence tag yet.</strong></p>
+    <p>
+      LN holds the tagging (project &rarr; delivery sequence &rarr; BOM &rarr;
+      planned production order) but the extract does not carry the column.
+      The moment a &lsquo;delivery sequence&rsquo; column lands on the
+      work-order sheet, the loader picks it up and this screen fills itself
+      &mdash; no code change needed. Until then all {{ order_total }} orders
+      show as one untagged block below.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr>
+          <th>sequence</th>
+          <th class="num">orders</th>
+          <th class="num">qty</th>
+          <th>first due</th>
+          <th>last due</th>
+          <th>completes</th>
+          <th class="num">late</th>
+          <th>status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in seqs %}
+        <tr>
+          <td class="mono">{{ s.tag }}</td>
+          <td class="num">{{ s.orders }}</td>
+          <td class="num">{{ s.qty }}</td>
+          <td>{{ s.first_due|date:"d M Y" }}</td>
+          <td>{{ s.last_due|date:"d M Y" }}</td>
+          <td class="mono">{{ s.completes|date:"d M Y"|default:"&mdash;" }}</td>
+          <td class="num">{{ s.late }}</td>
+          <td>
+            {% if s.unplanned %}
+              <span class="sieger-stat sieger-stat-bad">{{ s.unplanned }} unplanned</span>
+            {% elif s.ok %}
+              <span class="sieger-stat sieger-stat-ok">on time</span>
+            {% else %}
+              <span class="sieger-stat sieger-stat-warn">worst {{ s.worst_delay_days }}d late</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sg-rp-note">
+    Click-through: <a href="{{request.prefix}}/data/input/demand/">work orders</a>
+    &middot; <a href="{{request.prefix}}/constraint/">why late</a>
+    &middot; <a href="{{request.prefix}}/build-graph/">build graph</a>
+  </p>
+
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Flow time</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    Where the time goes on every production run: machining versus waiting.
+    Waiting is work-in-progress &mdash; parked material, floor space, locked cash.
+  </p>
+
+  <div class="sg-rp-facts">
+    <span class="sieger-stat"><b>{{ jobs }}</b> production runs</span>
+    <span class="sieger-stat"><b>{{ avg_span_d }}</b> days elapsed, average</span>
+    <span class="sieger-stat sieger-stat-ok"><b>{{ avg_work_d }}</b> days working</span>
+    <span class="sieger-stat sieger-stat-warn"><b>{{ avg_wait_d }}</b> days waiting</span>
+    <span class="sieger-stat sieger-stat-quiet"><b>{{ pct_working }}%</b> of elapsed time is work</span>
+  </div>
+
+  <h2 class="sg-rp-h2">How long runs take, end to end</h2>
+  <div class="sg-rp-hist">
+    {% for h in hist %}
+    <div class="sg-rp-histrow">
+      <span class="sg-rp-histlabel">{{ h.label }}</span>
+      <span class="sg-rp-histbar"><i style="width:{% widthratio h.pct maxpct 100 %}%"></i></span>
+      <span class="sg-rp-histval">{{ h.count }} <em>({{ h.pct }}%)</em></span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="sg-rp-h2">The twenty longest waits</h2>
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr>
+          <th>run</th><th>part</th><th>steps</th>
+          <th>starts</th><th>ends</th>
+          <th class="num">elapsed</th><th class="num">working</th>
+          <th class="num">waiting</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in top %}
+        <tr>
+          <td class="mono"><a href="{{request.prefix}}/data/input/manufacturingorder/?reference={{ j.ref }}">{{ j.ref }}</a></td>
+          <td class="mono">{{ j.item }}</td>
+          <td class="num">{{ j.steps }}</td>
+          <td>{{ j.start|date:"d M" }}</td>
+          <td>{{ j.end|date:"d M" }}</td>
+          <td class="num">{{ j.elapsed_d }} d</td>
+          <td class="num">{{ j.working_h }} h</td>
+          <td class="num sg-rp-warncell">{{ j.waiting_d }} d</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sg-rp-note">
+    Waiting time is shaped by the transfer table
+    (<span class="mono">loader/transfer_times.csv</span>, one row per machine
+    group, default 24h). Tighten a group's value and reload to see the effect.
+  </p>
+
+</div>
+{% endblock %}

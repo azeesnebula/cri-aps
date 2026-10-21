@@ -1,0 +1,151 @@
+﻿{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+The shipment map - the heart screen.
+
+A shell only: every node arrives as small JSON on demand (map/ships,
+map/<tag>/sections, map/<tag>/<section>/runs) and shipmap.js lays it out.
+Nothing is drawn until a planner asks for it, which is what keeps a plan
+of 18,000 runs instant.
+
+The blocker rail sits in its own COLUMN, not floating over the canvas -
+the previous version covered the nodes it was talking about.
+{% endcomment %}
+
+{% block extrastyle %}{{block.super}}
+<link rel="stylesheet" href="{{STATIC_URL}}sieger_ui/shipmap.css?v=10" />
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-mp" id="sg-mp"
+     data-ships-url="{{ request.prefix }}/build-graph/map/ships/"
+     data-map-url="{{ request.prefix }}/build-graph/map/"
+     data-search-url="{{ request.prefix }}/build-graph/map/search/"
+     data-run-url="{{ request.prefix }}/build-graph/run/"
+     data-shipment-url="{{ request.prefix }}/shipment/?dsq="
+     data-order-url="{{ request.prefix }}/build-graph/">
+
+  {# ------------------------------------------------------------ toolbar #}
+  <div class="sg-mp-top">
+    <div class="sg-mp-grp">
+      <span class="sg-mp-brand">{% trans "Build map" %}</span>
+      <span class="sg-mp-sub" id="mp-sub">{% trans "loading" %}&hellip;</span>
+    </div>
+
+    <div class="sg-mp-grp sg-mp-find">
+      <input class="sg-mp-search" type="search" id="mp-q"
+             placeholder="{% trans 'find a shipment, section, part or machine' %}"
+             autocomplete="off" aria-label="{% trans 'search the map' %}">
+      <div class="sg-mp-hits" id="mp-hits" hidden></div>
+    </div>
+
+    {% comment %}Detailed is the full card; brief strips a node to a dot,
+    a name and one number so the shape of a build reads at a glance. The
+    choice sticks per planner.{% endcomment %}
+    <div class="sg-mp-grp">
+      <button class="sg-mp-btn is-on" type="button" data-act="mode-detailed"
+              title="{% trans 'full cards - dates, machines, counts' %}">{% trans "detailed" %}</button>
+      <button class="sg-mp-btn" type="button" data-act="mode-brief"
+              title="{% trans 'small nodes - just the shape of the build' %}">{% trans "brief" %}</button>
+    </div>
+
+    <div class="sg-mp-grp">
+      <button class="sg-mp-btn" type="button" data-act="expand-all"
+              title="{% trans 'open every operation group of the open shipment' %}">{% trans "open all" %}</button>
+      <button class="sg-mp-btn" type="button" data-act="collapse-all"
+              title="{% trans 'fold everything back to the shipments' %}">{% trans "close all" %}</button>
+    </div>
+
+    {% comment %}Delay stepping replaced the camera walk: it opens the
+    branch the delay lives in, rather than flying over folded cards.
+    {% endcomment %}
+    <div class="sg-mp-grp">
+      <button class="sg-mp-btn sg-mp-btn-go" type="button" data-act="delay-first"
+              title="{% trans 'open the operation that makes this shipment late' %}">&#9654; {% trans "show the delay" %}</button>
+      <button class="sg-mp-btn" type="button" data-act="delay-next" disabled
+              title="{% trans 'step to the next worst delay' %}">{% trans "next delay" %} &rarr;</button>
+      <span class="sg-mp-step" id="mp-step"></span>
+    </div>
+
+    <div class="sg-mp-spacer"></div>
+
+    <div class="sg-mp-grp">
+      <a class="sg-mp-btn" href="{{ request.prefix }}/build-graph/orders/"
+         title="{% trans 'the per-order step graph' %}">{% trans "single order" %} &rarr;</a>
+    </div>
+  </div>
+
+  {# ------------------------------------------------- timeline | map | rail #}
+  <div class="sg-mp-body">
+
+    <div class="sg-mp-time" id="mp-time" aria-hidden="true">
+      <div class="sg-mp-time-in" id="mp-time-in"></div>
+    </div>
+
+    <div class="sg-mp-canvas" id="mp-canvas" tabindex="0">
+      <div class="sg-mp-world" id="mp-world">
+        <svg class="sg-mp-wires" id="mp-wires" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="sg-mp-msg" id="mp-msg"><p>{% trans "loading the shipments" %}&hellip;</p></div>
+    </div>
+
+    {% comment %}Its own column, so it can never cover a node.{% endcomment %}
+    <aside class="sg-mp-rail" id="mp-rail">
+      <p class="sg-mp-rail-t">{% trans "what is causing trouble" %}</p>
+      {% for b in blockers %}
+      <div class="sg-mp-blk" data-machine="{{ b.machine }}"
+           data-ships="{% for t in b.ships %}{{ t }}{% if not forloop.last %},{% endif %}{% endfor %}"
+           role="button" tabindex="0"
+           title="{% trans 'go to the worst shipment this machine is holding' %}">
+        <p class="sg-mp-blk-hd">
+          <b>{{ b.machine }}</b>
+          <span>{{ b.ships_hit }} {% trans "shipment" %}{{ b.ships_hit|pluralize }}</span>
+        </p>
+        {% if b.descr %}<p class="sg-mp-blk-d">{{ b.descr }}</p>{% endif %}
+        <p class="sg-mp-blk-s"><i>{% trans "suggestion" %}</i> {{ b.fix }}</p>
+        {% comment %}Sieger owns the subcontracting decision, so where no
+        vendor route exists this is phrased to them as the action, not as
+        a missing field in their data.{% endcomment %}
+        <p class="sg-mp-blk-s{% if not b.vendor %} is-ask{% endif %}">
+          <i>{% trans "subcontract" %}</i>
+          {% if b.vendor %}{{ b.sub }}
+          {% else %}{% trans "your data marks this work in-house. If a vendor could take it, name one and we will test it as a what-if." %}{% endif %}
+        </p>
+      </div>
+      {% endfor %}
+      <p class="sg-mp-blk-note">{% trans "click a card to jump to the shipment it is holding" %}</p>
+    </aside>
+
+    {% comment %}What "details â€º" opens. Ships and sections render from
+    data already loaded; a run fetches the solver's own record. An
+    overlay on the map's own ground, so it never adds a column and
+    shrinks the cards it is describing.{% endcomment %}
+    <aside class="sg-mp-dt" id="mp-dt" hidden aria-label="{% trans 'card details' %}">
+      <div class="sg-mp-dt-hd">
+        <div class="sg-mp-dt-cap">
+          <p class="sg-mp-dt-kind" id="mp-dt-kind"></p>
+          <p class="sg-mp-dt-title" id="mp-dt-title"></p>
+        </div>
+        <button class="sg-mp-dt-x" type="button" id="mp-dt-x"
+                aria-label="{% trans 'close' %}">&times;</button>
+      </div>
+      <div class="sg-mp-dt-bd" id="mp-dt-bd"></div>
+    </aside>
+  </div>
+
+  {# ------------------------------------------------------------- legend #}
+  <div class="sg-mp-key">
+    <span><i class="sg-mp-sw t-ok"></i>{% trans "on time" %}</span>
+    <span><i class="sg-mp-sw t-late"></i>{% trans "late" %}</span>
+    <span><i class="sg-mp-sw t-crit"></i>{% trans "unplanned / critical" %}</span>
+    <span><i class="sg-mp-sw t-share"></i>{% trans "also built for other shipments" %}</span>
+    <span>{% trans "Click â–¾ on a card to open what feeds it. Time runs down the page; the left rail says how much." %}</span>
+  </div>
+
+</div>
+
+<script src="{{STATIC_URL}}sieger_ui/shipmap.js?v=13"></script>
+{% endblock %}

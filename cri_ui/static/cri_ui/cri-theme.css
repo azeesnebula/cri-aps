@@ -1,0 +1,234 @@
+/* C.R.I Pumps identity. Shared by every custom screen and core frePPLe view.
+   Keep the legacy --sg-* interface so charts and JS read the same palette. */
+:root {
+  color-scheme: light;
+  --cri-logo-red: #ff1824;
+  --cri-primary: #c8102e;
+  --cri-primary-hover: #a80d26;
+  --cri-heading: FontAwesome, "Arial", "Helvetica Neue", sans-serif;
+  --sg-sans: FontAwesome, "Arial", "Helvetica Neue", "Segoe UI", sans-serif;
+  --sg-mono: FontAwesome, "Consolas", "Liberation Mono", monospace;
+  --sg-red: #c8102e;
+  --sg-red-soft: rgba(200, 16, 46, .07);
+  --sg-red-line: rgba(200, 16, 46, .28);
+  --sg-ground: #f5f6f8;
+  --sg-surface: #ffffff;
+  --sg-surface-2: #eef0f3;
+  --sg-sunk: #e7eaee;
+  --sg-ink: #232629;
+  --sg-ink-2: #48515c;
+  --sg-quiet: #626c78;
+  --sg-muted: var(--sg-quiet);
+  --sg-rule: #d7dce2;
+  --sg-rule-soft: #e8ebef;
+  --sg-accent: var(--cri-primary);
+  --sg-accent-in: var(--cri-primary-hover);
+  --sg-on-accent: #ffffff;
+  --sg-ok: #19704c;
+  --sg-ok-soft: rgba(25, 112, 76, .09);
+  --sg-warn: #885809;
+  --sg-warn-soft: rgba(173, 111, 8, .10);
+  --sg-bad: #b51b35;
+  --sg-bad-soft: rgba(181, 27, 53, .08);
+  --sg-shadow: 0 2px 4px rgba(35, 38, 41, .03), 0 8px 24px rgba(35, 38, 41, .045);
+}
+
+/* Both explicit and system dark mode use the same cool-charcoal surfaces. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --cri-primary: #c8102e;
+  --cri-primary-hover: #a80d26;
+  --sg-red: #ff7a87;
+  --sg-red-soft: rgba(255, 122, 135, .10);
+  --sg-red-line: rgba(255, 122, 135, .35);
+  --sg-ground: #14171b;
+  --sg-surface: #1d2228;
+  --sg-surface-2: #272e36;
+  --sg-sunk: #111418;
+  --sg-ink: #f4f5f7;
+  --sg-ink-2: #c1c8d0;
+  --sg-quiet: #a1abb7;
+  --sg-rule: #414b57;
+  --sg-rule-soft: #303943;
+  --sg-accent: var(--cri-primary);
+  --sg-accent-in: #ff7a87;
+  --sg-on-accent: #ffffff;
+  --sg-ok: #78d7ae;
+  --sg-ok-soft: rgba(120, 215, 174, .10);
+  --sg-warn: #efbe66;
+  --sg-warn-soft: rgba(239, 190, 102, .10);
+  --sg-bad: #ff8b98;
+  --sg-bad-soft: rgba(255, 139, 152, .10);
+  --sg-shadow: 0 6px 24px rgba(0, 0, 0, .20);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --cri-primary: #c8102e;
+    --cri-primary-hover: #a80d26;
+    --sg-red: #ff7a87;
+    --sg-red-soft: rgba(255, 122, 135, .10);
+    --sg-red-line: rgba(255, 122, 135, .35);
+    --sg-ground: #14171b;
+    --sg-surface: #1d2228;
+    --sg-surface-2: #272e36;
+    --sg-sunk: #111418;
+    --sg-ink: #f4f5f7;
+    --sg-ink-2: #c1c8d0;
+    --sg-quiet: #a1abb7;
+    --sg-rule: #414b57;
+    --sg-rule-soft: #303943;
+    --sg-accent: var(--cri-primary);
+    --sg-accent-in: #ff7a87;
+    --sg-on-accent: #ffffff;
+    --sg-ok: #78d7ae;
+    --sg-ok-soft: rgba(120, 215, 174, .10);
+    --sg-warn: #efbe66;
+    --sg-warn-soft: rgba(239, 190, 102, .10);
+    --sg-bad: #ff8b98;
+    --sg-bad-soft: rgba(255, 139, 152, .10);
+    --sg-shadow: 0 6px 24px rgba(0, 0, 0, .20);
+  }
+}
+
+body {
+  --bs-body-bg: var(--sg-ground);
+  --bs-body-color: var(--sg-ink-2);
+  --bs-border-color: var(--sg-rule);
+  --bs-primary: var(--cri-primary);
+  --bs-link-color: var(--sg-red);
+  --bs-link-hover-color: var(--sg-accent-in);
+  font-family: var(--sg-sans);
+  line-height: 1.5;
+}
+body h1, body h2, body h3, body h4, body .sieger-h1 {
+  font-family: var(--cri-heading);
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+body h1, body .sieger-h1 { font-size: clamp(1.65rem, 2.2vw, 2.1rem); line-height: 1.2; }
+button, input, select, textarea { font-family: inherit; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--cri-primary); }
+:focus-visible { outline: 3px solid var(--sg-red); outline-offset: 3px; }
+
+/* Consistent company chrome, including the core grids and admin pages. */
+#nav-menu-header.navbar { min-height: 76px; padding: 8px 20px; }
+#nav-menu-header.navbar::after { height: 3px; background: var(--cri-logo-red); }
+#nav-breadcrumb-header.navbar { min-height: 42px; padding: 6px 20px; box-shadow: none; }
+.sieger-brand { gap: 12px; }
+.sieger-brand-mark { padding: 4px 8px; border-radius: 5px; background: #fff; }
+.sieger-brand-mark img { width: 202px; height: auto; max-width: 100%; }
+.sieger-brand-sub { font-family: var(--sg-sans); font-size: 10px; font-weight: 700; letter-spacing: .12em; line-height: 1.5; text-transform: uppercase; border-color: var(--cri-logo-red); padding-left: 12px; }
+.navbar .nav-link { font-weight: 600; }
+.navbar .dropdown-menu { border-radius: 8px; box-shadow: var(--sg-shadow); }
+.navbar .dropdown-item:hover, .navbar .dropdown-item:focus { background: var(--sg-red-soft); color: var(--sg-red); }
+.navbar .dropdown-item.active, .navbar .dropdown-item:active { background: var(--cri-primary); color: #fff; }
+.sg-theme { min-height: 36px; min-width: 36px; border-radius: 6px; }
+body .nav-tabs .nav-link.active { border-top-color: var(--cri-primary); color: var(--sg-red); }
+.sieger-cockpit { max-width: 1600px; margin-inline: auto; padding: 28px 16px 48px; }
+.sieger-hd { align-items: center; padding-bottom: 22px; margin-bottom: 24px; }
+.sieger-hd::after { width: 64px; height: 3px; background: var(--cri-logo-red); }
+.sieger-eyebrow { font-family: var(--sg-sans); font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--sg-red); margin-bottom: 8px; }
+.sieger-k { font-family: var(--sg-sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+.sieger-v { font-family: var(--sg-sans); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sieger-lede { line-height: 1.6; }
+
+/* Controls and panels: shared by scheduling, release, reports and import. */
+body .btn-primary, body .sieger-btn-primary {
+  --bs-btn-bg: var(--cri-primary);
+  --bs-btn-border-color: var(--cri-primary);
+  --bs-btn-hover-bg: var(--cri-primary-hover);
+  --bs-btn-hover-border-color: var(--cri-primary-hover);
+  --bs-btn-active-bg: var(--cri-primary-hover);
+  --bs-btn-active-border-color: var(--cri-primary-hover);
+  --bs-btn-disabled-bg: var(--cri-primary);
+  --bs-btn-disabled-border-color: var(--cri-primary);
+  background: var(--cri-primary) !important;
+  border-color: var(--cri-primary) !important;
+  color: #fff !important;
+}
+body .btn-primary:hover, body .sieger-btn-primary:hover { background: var(--cri-primary-hover) !important; }
+.sieger-btn, .btn, .sg-orders-button { border-radius: 6px; font-weight: 600; }
+.sieger-btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; }
+.form-control, .form-select { border-radius: 6px; border-color: var(--sg-rule); background-color: var(--sg-surface); color: var(--sg-ink); }
+.form-control:focus, .form-select:focus { border-color: var(--sg-red); box-shadow: 0 0 0 3px var(--sg-red-soft); background-color: var(--sg-surface); color: var(--sg-ink); }
+.card, .modal-content, .sieger-step { border-radius: 10px; border-color: var(--sg-rule); background: var(--sg-surface); box-shadow: var(--sg-shadow); }
+.modal-header { border-bottom-color: var(--sg-rule); }
+.modal-footer { border-top-color: var(--sg-rule); }
+.sg-rp-tblwrap { border-radius: 8px; border: 1px solid var(--sg-rule); background: var(--sg-surface); }
+.sg-home-t th { font-family: var(--sg-sans); font-size: 11px; font-weight: 700; letter-spacing: .045em; color: var(--sg-ink-2); }
+.sg-home-t td { padding-top: 16px; padding-bottom: 16px; }
+.ui-jqgrid, .ui-jqgrid .ui-jqgrid-view { font-family: var(--sg-sans); }
+.ui-jqgrid .ui-jqgrid-htable th { font-weight: 700; }
+.ui-jqgrid .ui-state-highlight { background: var(--sg-red-soft) !important; color: var(--sg-ink) !important; }
+.sg-sc-bar.is-ok { background: #48515c; }
+:root[data-theme="dark"] .sg-sc-bar.is-ok { background: #626e7c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sg-sc-bar.is-ok { background: #626e7c; } }
+
+/* Company overview: real plan metrics only. */
+.cri-intro { margin: 8px 0 0; color: var(--sg-quiet); font-size: 14px; }
+.cri-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0 0 28px; }
+.cri-metric { padding: 20px; border: 1px solid var(--sg-rule); border-radius: 10px; background: var(--sg-surface); box-shadow: var(--sg-shadow); }
+.cri-metric-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sg-quiet); }
+.cri-metric-value { display: block; margin: 8px 0; font: 750 32px/1.15 var(--cri-heading); color: var(--sg-ink); font-variant-numeric: tabular-nums; }
+.cri-metric-note { font-size: 12px; color: var(--sg-quiet); }
+.cri-metric-attention { border-top: 3px solid var(--cri-logo-red); }
+.cri-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.cri-section-heading h2 { font-size: 18px; margin: 0; }
+.cri-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cri-empty { padding: 48px 24px; text-align: center; }
+.cri-empty h2 { font-size: 22px; }
+.cri-empty p { color: var(--sg-quiet); max-width: 55ch; margin: 12px auto 20px; }
+.cri-empty .cri-actions { justify-content: center; }
+.cri-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--sg-rule); font-size: 11px; color: var(--sg-quiet); }
+
+/* Sign-in is part of the product, not an unbranded admin screen. */
+body.login #workarea { padding: 0; }
+.cri-login { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr); }
+.cri-login-story { background: #232629; color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(32px, 6vw, 88px); border-top: 6px solid var(--cri-logo-red); }
+.cri-login-wordmark { display: inline-flex; width: fit-content; padding: 10px 16px; border-radius: 6px; background: #fff; }
+.cri-login-wordmark img { width: 243px; max-width: 100%; height: auto; }
+.cri-login-story h1 { font-size: clamp(32px, 4vw, 56px); line-height: 1.08; color: #fff; margin: 28px 0 24px; max-width: 12ch; font-weight: 800; }
+.cri-login-story p { max-width: 40ch; line-height: 1.7; color: #ccd0d5; }
+.cri-login-kicker { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: #ff8790 !important; }
+.cri-login-rule { width: 60px; height: 4px; background: var(--cri-logo-red); margin-bottom: 24px; }
+.cri-login-story footer { font-size: 12px; color: #b8c0c9; }
+.cri-login-panel { display: flex; align-items: center; justify-content: center; padding: 40px 28px; background: var(--sg-surface); }
+.cri-login-form { width: 100%; max-width: 380px; }
+.cri-login-form h2 { font-size: 28px; margin: 10px 0; }
+.cri-login-form > p { color: var(--sg-quiet); margin-bottom: 28px; }
+.cri-login-form label { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.cri-login-form .form-control { min-height: 48px; font-size: 16px; }
+.cri-login-form .btn { width: 100%; min-height: 48px; margin-top: 8px; }
+.cri-login-options { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 12px; margin: 20px 0; }
+.cri-login-options label { margin: 0; font-weight: 400; }
+.cri-login-note { margin-top: 28px; font-size: 12px; color: var(--sg-quiet); line-height: 1.6; }
+.cri-login-errors { color: var(--sg-bad); background: var(--sg-bad-soft); border-left: 3px solid var(--sg-bad); padding: 12px; border-radius: 4px; font-size: 13px; margin-bottom: 20px; }
+.cri-login-errors ul { padding-left: 18px; margin: 0; }
+
+@media (max-width: 1100px) {
+  .sieger-brand-sub { display: none; }
+  .cri-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  #nav-menu-header.navbar { padding-inline: 12px; min-height: 68px; }
+  #nav-breadcrumb-header.navbar { padding-inline: 12px; }
+  .sieger-brand-mark img { width: 175px; }
+  .sieger-cockpit { padding: 20px 4px 32px; }
+  .sieger-hd { gap: 16px; }
+  .sieger-hd-meta { text-align: left; }
+  .cri-summary { gap: 10px; }
+  .cri-metric { padding: 16px; }
+  .cri-metric-value { font-size: 28px; }
+  .sieger-btn, .sg-theme { min-height: 44px; min-width: 44px; }
+  .cri-login { grid-template-columns: minmax(0, 1fr); }
+  .cri-login-story { padding: 28px; gap: 24px; }
+  .cri-login-story h1 { font-size: 32px; max-width: 18ch; margin: 16px 0; }
+  .cri-login-story footer, .cri-login-rule { display: none; }
+  .cri-login-panel { padding: 32px 24px; }
+  .form-control, .form-select { font-size: 16px; }
+}
+@media (max-width: 380px) { .cri-summary { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

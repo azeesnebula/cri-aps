@@ -1,0 +1,102 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Adherence</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    Two views of trust in the plan: how much of the order book is planned on
+    time, and how much the plan has drifted since it was last snapshotted.
+  </p>
+
+  <div class="sg-rp-facts">
+    <span class="sieger-stat {% if overall >= 90 %}sieger-stat-ok{% else %}sieger-stat-warn{% endif %}">
+      <b>{{ overall }}%</b> planned on time
+    </span>
+    <span class="sieger-stat"><b>{{ ontime }}</b> on time</span>
+    <span class="sieger-stat sieger-stat-warn"><b>{{ late }}</b> late</span>
+    <span class="sieger-stat sieger-stat-quiet">{{ total }} orders due in the next 12 weeks</span>
+  </div>
+
+  <h2 class="sg-rp-h2">On-time by due week</h2>
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr><th>week of</th><th class="num">orders</th><th class="num">on time</th>
+            <th class="num">late</th><th class="num">on-time %</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for w in weeks %}
+        <tr>
+          <td>{{ w.wk|date:"d M Y" }}</td>
+          <td class="num">{{ w.orders }}</td>
+          <td class="num">{{ w.ontime }}</td>
+          <td class="num{% if w.late %} sg-rp-warncell{% endif %}">{{ w.late }}</td>
+          <td class="num">{{ w.pct }}%</td>
+          <td class="sg-rp-barcell"><span class="sg-rp-histbar"><i style="width:{{ w.pct }}%"></i></span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="sg-rp-h2">Drift since the last snapshot</h2>
+  {% if drift %}
+  <div class="sg-rp-facts">
+    <span class="sieger-stat sieger-stat-quiet">snapshot {{ snapshot|date:"D d M Y, H:i" }}</span>
+    <span class="sieger-stat"><b>{{ drift.same }}</b> unchanged</span>
+    <span class="sieger-stat sieger-stat-warn"><b>{{ drift.later }}</b> moved later</span>
+    <span class="sieger-stat sieger-stat-ok"><b>{{ drift.earlier }}</b> moved earlier</span>
+  </div>
+  {% if movers %}
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr><th>order</th><th>part</th><th>due</th>
+            <th>was planned</th><th>now planned</th><th class="num">shift</th></tr>
+      </thead>
+      <tbody>
+        {% for m in movers %}
+        <tr>
+          <td class="mono">{{ m.name }}</td>
+          <td class="mono">{{ m.item }}</td>
+          <td>{{ m.due|date:"d M" }}</td>
+          <td>{{ m.was|date:"d M H:i" }}</td>
+          <td>{{ m.is_now|date:"d M H:i" }}</td>
+          <td class="num{% if m.shift_d > 0 %} sg-rp-warncell{% endif %}">
+            {% if m.shift_d > 0 %}+{% endif %}{{ m.shift_d }} d
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="sieger-card sieger-card-note">
+    <p><strong>No plan snapshot exists yet.</strong></p>
+    <p>
+      Confirming actuals overwrites planned dates, so adherence can only ever
+      be measured against a snapshot taken when the plan was published. The
+      pipeline runs <span class="mono">frepplectl archive</span> straight
+      after every plan run; once the first snapshot lands this section
+      compares every order's planned delivery against it.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

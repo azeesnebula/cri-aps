@@ -1,0 +1,89 @@
+﻿{% extends "admin/base.html" %}
+{% comment %}
+C.R.I Pumps override of frePPLe's page chrome.
+
+This is a FULL COPY of freppledb/common/templates/admin/base_site.html, not
+an extension - a template cannot {% extends %} its own name, it would
+resolve to itself and recurse.
+
+The branding block, shared C.R.I theme, manifest and appearance controls
+are owned by this application. Legacy static filenames retain compatibility.
+
+Re-diff this file against core on every frePPLe upgrade.
+{% endcomment %}
+{% load i18n %}
+
+{% block title %}{% if title %}{{title|capfirst}} · {% endif %}C.R.I Pumps | Production Planning{% endblock %}
+
+{% comment %}Use the supplied C.R.I logo on a white plate in either theme.{% endcomment %}
+{% block branding %}<span class="sieger-brand">
+  <span class="sieger-brand-mark"><img src="{{STATIC_URL}}cri_ui/cri-logo.gif" alt="C.R.I Pumps" width="270" height="67" /></span>
+  <span class="sieger-brand-sub">Production<br>Planning</span>
+</span>{% endblock %}
+
+{% block extrastyle %}{{block.super}}
+{% comment %}Stamp the chosen theme on <html> BEFORE any stylesheet
+paints, or the page flashes light before switching to dark. Inline and
+first on purpose - a deferred script is too late.{% endcomment %}
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem("cri-pumps-theme");
+    if (t === "light" || t === "dark")
+      document.documentElement.setAttribute("data-theme", t);
+  } catch (e) { /* private mode: fall back to prefers-color-scheme */ }
+})();
+</script>
+<link rel="stylesheet" href="{{STATIC_URL}}css/font-awesome.min.css" />
+<link rel="stylesheet" href="{{STATIC_URL}}css/{{request.theme}}/fonts.css" />
+<link rel="stylesheet" href="{{STATIC_URL}}css/ui.jqgrid.min.css" />
+<link rel="stylesheet" href="{{STATIC_URL}}css/{{request.theme}}/bootstrap.min.css" />
+{% comment %}Additive overrides - never replace a core css file by path{% endcomment %}
+{% comment %}Bump ?v= whenever a stylesheet or script changes,
+or browsers and frePPLe's service worker keep serving the old file.{% endcomment %}
+<link rel="stylesheet" href="{{STATIC_URL}}sieger_ui/sieger.css?v=33" />
+<link rel="stylesheet" href="{{STATIC_URL}}cri_ui/cri-theme.css?v=1" />
+<meta name="application-name" content="C.R.I Pumps Planning" />
+<meta name="theme-color" content="#C8102E" />
+<script src="{{STATIC_URL}}sieger_ui/sieger-shipbar.js?v=3" defer></script>
+
+<link rel="icon" type="image/gif" href="{{STATIC_URL}}cri_ui/cri-logo.gif"/>
+<link rel="manifest" href="{{STATIC_URL}}cri_ui/manifest.webmanifest">
+{% endblock %}
+{% block extrahead %}{{block.super}}
+<script src="/data/jsi18n/"></script>
+<script src="{{STATIC_URL}}js/jquery-3.6.0.min.js"></script>
+<script src="{{STATIC_URL}}js/jquery-ui.min.js"></script>
+<script src="{{STATIC_URL}}js/moment-with-locales.min.js"></script>
+<script src="{{STATIC_URL}}js/typeahead.bundle.min.js"></script>
+<script src="{{STATIC_URL}}js/i18n/grid.locale-{{LANGUAGE_CODE|default:"en"}}.js"></script>
+<script src="{{STATIC_URL}}js/jquery.jqgrid.min.js"></script>
+<script src="{{STATIC_URL}}js/frepple{% if not debug_js %}.min{% endif %}.js"></script>
+{% comment %}Gantt time grid + pinned row labels. MUST come after
+frepple.js - it wraps the global gantt.header() that file defines.{% endcomment %}
+<script src="{{STATIC_URL}}sieger_ui/sieger-gantt.js?v=5"></script>
+{% comment %}Builds the light/dark control. The stamp that avoids
+the flash is inline in extrastyle above - this only draws the button.{% endcomment %}
+<script src="{{STATIC_URL}}sieger_ui/sieger-theme.js?v=cri-1"></script>
+{% comment %}Splits the long menus into grouped columns. Reads the
+dividers freppledb already emits - no menu data changes.{% endcomment %}
+<script src="{{STATIC_URL}}sieger_ui/sieger-nav.js?v=7"></script>
+
+<script src="{{STATIC_URL}}js/Sortable.min.js"></script>
+<script>
+  var url_prefix = '{{request.prefix}}';
+  var database = '{{request.database}}';
+  var dateformat = '{% setting "DATE_FORMAT_JS" %}';
+  var datetimeformat = '{% setting "DATETIME_FORMAT_JS" %}';
+
+  if (navigator && 'serviceWorker' in navigator)
+    navigator.serviceWorker.register("{{STATIC_URL}}js/serviceworker.js");
+
+$(function() {
+    {% if tzoffset is None %}
+    setCookie('tzoffset', new Date().getTimezoneOffset() * 60);
+    {% endif %}
+  });
+</script>
+{% endblock %}
+{% block nav-global %}{% endblock %}

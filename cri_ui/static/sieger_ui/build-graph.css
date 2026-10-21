@@ -1,0 +1,979 @@
+/* ------------------------------------------------------------------
+   Sieger APS - build graph.
+
+   Additive, and loaded only on the two build-graph pages, so nothing
+   here can reach an existing screen.
+
+   Same rule as sieger.css: frePPLe swaps the whole bootstrap bundle to
+   change theme and leaves no marker in the DOM, so every surface and
+   border below is a TRANSLUCENT tint over whatever ground the active
+   theme paints, and text inherits the theme's own colour. That keeps
+   this correct on all ten themes without knowing which one is active.
+
+   Tokens (--sg-accent, --sg-ok, --sg-surface, ...) come from sieger.css,
+   which base_site.html always loads first.
+   ------------------------------------------------------------------ */
+
+:root {
+  /* One card width drives the whole horizontal layout - the JS reads it
+     back so the two can never disagree. */
+  --sg-bg-card:  208px;
+  --sg-bg-gap:   26px;
+  --sg-bg-lane:  76px;
+}
+
+/* ==================================================================
+   1. PRODUCT PICKER
+   ================================================================== */
+
+.sg-bg-pick { max-width: 1500px; padding: 1.6rem .25rem 3rem; }
+
+.sg-bg-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem 1.4rem;
+  margin: 1.1rem 0 .5rem;
+  padding: .75rem .9rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: 3px;
+}
+.sg-bg-tools form { display: flex; gap: .4rem; margin: 0; }
+.sg-bg-search {
+  width: 17rem;
+  max-width: 46vw;
+  padding: .38rem .6rem;
+  font-family: var(--sg-mono);
+  font-size: .8rem;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+}
+.sg-bg-search:focus { outline: 2px solid var(--sg-accent); outline-offset: -1px; }
+.sg-bg-group { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+
+/* ---------------------------------------------------------- the cards */
+.sg-bg-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  gap: .8rem;
+  margin: 1.2rem 0 1.6rem;
+}
+
+.sg-bg-card {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding: .9rem 1rem 1rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-left: 3px solid var(--sg-ok);
+  border-radius: 3px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+.sg-bg-card:hover,
+.sg-bg-card:focus-visible {
+  background: var(--sg-surface-2);
+  border-color: var(--sg-rule);
+  border-left-color: var(--sg-accent);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+  outline: none;
+}
+.sg-bg-card.is-late  { border-left-color: var(--sg-warn); }
+.sg-bg-card.is-block { border-left-color: var(--sg-bad); opacity: .74; }
+
+.sg-bg-card-hd { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; }
+.sg-bg-card-item {
+  font-family: var(--sg-mono);
+  font-size: .96rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  word-break: break-all;
+}
+.sg-bg-card-ord {
+  font-family: var(--sg-mono);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  opacity: .6;
+  white-space: nowrap;
+}
+.sg-bg-card-desc {
+  font-size: .78rem;
+  line-height: 1.35;
+  opacity: .72;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.1em;
+}
+.sg-bg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .45rem .5rem;
+  padding-top: .55rem;
+  border-top: 1px solid var(--sg-rule-soft);
+}
+.sg-bg-f { min-width: 0; }
+.sg-bg-f b {
+  display: block;
+  font-family: var(--sg-mono);
+  font-size: .82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sg-bg-f span {
+  display: block;
+  font-family: var(--sg-mono);
+  font-size: .58rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  opacity: .5;
+}
+.sg-bg-card-ft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  align-items: center;
+}
+
+/* Small status pill, reused on both screens. */
+.sg-bg-pill {
+  display: inline-block;
+  padding: .13rem .42rem;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+  background: var(--sg-surface-2);
+  white-space: nowrap;
+}
+.sg-bg-pill.is-ok    { border-color: rgba(47, 163, 106, .55); color: var(--sg-ok); }
+.sg-bg-pill.is-late  { border-color: rgba(208, 138, 44, .6);  color: var(--sg-warn); }
+.sg-bg-pill.is-crit  { border-color: rgba(217, 83, 79, .6);   color: var(--sg-bad); }
+.sg-bg-pill.is-share { border-color: rgba(232, 163, 61, .65); color: var(--sg-accent-in); }
+.sg-bg-pill.is-key   { border-color: var(--sg-accent); color: var(--sg-accent); }
+
+.sg-bg-pager {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+  font-family: var(--sg-mono);
+  font-size: .78rem;
+}
+.sg-bg-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  opacity: .7;
+  background: var(--sg-surface);
+  border: 1px dashed var(--sg-rule);
+  border-radius: 3px;
+}
+
+/* ==================================================================
+   2. GRAPH PAGE - frame
+   ================================================================== */
+
+.sg-bg { display: flex; flex-direction: column; height: calc(100vh - 90px); min-height: 520px; }
+
+.sg-bg-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+  padding: .55rem .7rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: 3px 3px 0 0;
+  border-bottom-width: 2px;
+}
+.sg-bg-top .sg-bg-group + .sg-bg-group { padding-left: 1rem; border-left: 1px solid var(--sg-rule-soft); }
+.sg-bg-spacer { flex: 1 1 auto; }
+
+.sg-bg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .28rem .55rem;
+  font-family: var(--sg-mono);
+  font-size: .7rem;
+  letter-spacing: .04em;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.sg-bg-btn:hover { background: var(--sg-rule-soft); color: inherit; text-decoration: none; }
+.sg-bg-btn.is-on { border-color: var(--sg-accent); color: var(--sg-accent); }
+.sg-bg-btn[disabled] { opacity: .4; cursor: default; }
+
+.sg-bg-zoom {
+  font-family: var(--sg-mono);
+  font-size: .7rem;
+  opacity: .65;
+  min-width: 3.2em;
+  text-align: center;
+}
+
+/* -------------------------------------------------------- the viewport */
+.sg-bg-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-top: 0;
+  border-radius: 0 0 3px 3px;
+  overflow: hidden;
+}
+
+/* The date rail. Pinned left; it scrolls vertically with the canvas but
+   never horizontally, so the axis is readable at any pan position. */
+.sg-bg-rail {
+  position: relative;
+  flex: 0 0 92px;
+  overflow: hidden;
+  border-right: 1px solid var(--sg-rule);
+  background: var(--sg-surface-2);
+  z-index: 3;
+}
+.sg-bg-rail-in { position: absolute; inset: 0; will-change: transform; }
+.sg-bg-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 .5rem 0 .55rem;
+  font-family: var(--sg-mono);
+  font-size: .64rem;
+  line-height: 1.15;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.sg-bg-mark b { display: block; font-weight: 700; }
+.sg-bg-mark span { display: block; font-size: .55rem; letter-spacing: .08em; opacity: .5; text-transform: uppercase; }
+.sg-bg-mark.is-edge b { color: var(--sg-accent); }
+
+.sg-bg-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: auto;
+  cursor: grab;
+  overscroll-behavior: contain;
+  /* Drag means pan, never text selection - card text was getting
+     selected and dragged instead of the canvas moving. The detail
+     panel stays selectable for copying. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sg-bg-canvas.is-drag { cursor: grabbing; }
+.sg-bg-world {
+  position: relative;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Horizontal date bands, drawn behind everything. */
+.sg-bg-band {
+  position: absolute;
+  left: 0;
+  height: 0;
+  border-top: 1px dashed var(--sg-rule-soft);
+  pointer-events: none;
+}
+.sg-bg-band.is-major { border-top-style: solid; border-top-color: var(--sg-rule); }
+
+.sg-bg-wires { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+/* The full-canvas renderer for very large graphs. It fills the viewport
+   (not the world), so pan/zoom are a draw-time transform and there are no
+   DOM cards at all. Pointer events go to #sg-bg-canvas, so this is inert. */
+.sg-bg-gfx { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.sg-bg-canvas.is-gfx { overflow: hidden; }
+.sg-bg-canvas.is-gfx .sg-bg-world { display: none; }
+/* Big graphs raster their static wires into this bitmap - cheap to blit,
+   where thousands of live SVG beziers froze tile rasterization. */
+.sg-bg-wirecan { position: absolute; left: 0; top: 0; pointer-events: none; }
+.sg-bg-world.is-dimming .sg-bg-wirecan { opacity: .16; }
+.sg-bg-world.sg-enter .sg-bg-wirecan { animation: sg-bg-fade 1s .3s both; }
+.sg-bg-wire {
+  fill: none;
+  stroke: var(--sg-rule);
+  stroke-width: 1.4;
+  /* No opacity in the transition: dimming flips thousands of wires at
+     once, and animating that is a 120ms full-canvas repaint per hover. */
+  transition: stroke .12s ease, stroke-width .12s ease;
+}
+.sg-bg-wire.is-hot { stroke: var(--sg-accent); stroke-width: 2.4; }
+.sg-bg-wire.is-dim { opacity: .16; }
+/* Chain highlight, container-level: one class on the world dims every
+   wire, the lit chain opts out with is-hot. O(chain) DOM writes. */
+.sg-bg-world.is-dimming .sg-bg-wire:not(.is-hot) { opacity: .16; }
+.sg-bg-wire.is-share { stroke: var(--sg-accent-in); stroke-dasharray: 5 4; }
+
+/* ==================================================================
+   3. NODES
+   ================================================================== */
+
+.sg-bg-node {
+  position: absolute;
+  width: var(--sg-bg-card);
+  box-sizing: border-box;
+  padding: .42rem .55rem .46rem;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-left: 3px solid var(--sg-rule);
+  border-radius: 3px;
+  cursor: pointer;
+  /* No opacity transition (dim flips thousands of cards at once), and no
+     backdrop-filter: the surface tokens are opaque, so the blur showed
+     nothing while costing a per-card backdrop pass on every repaint. */
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+/* Hover styling only on graphs small enough to repaint instantly. On a
+   2,000-card canvas every hover crossing invalidates tiles shared with
+   thousands of wire paths (~1s of raster per frame, measured) - so in
+   is-big mode a hover changes nothing and the canvas stays at full fps. */
+.sg-bg-world:not(.is-big) .sg-bg-node:hover { border-color: var(--sg-accent); box-shadow: 0 2px 10px rgba(0, 0, 0, .22); }
+.sg-bg-node.is-sel { border-color: var(--sg-accent); box-shadow: 0 0 0 2px var(--sg-accent); }
+.sg-bg-node.is-dim { opacity: .22; }
+.sg-bg-world.is-dimming .sg-bg-node:not(.is-keep) { opacity: .22; }
+.sg-bg-node.is-hit { border-color: var(--sg-accent-in); box-shadow: 0 0 0 2px var(--sg-accent-in); }
+
+.sg-bg-node.t-ok   { border-left-color: var(--sg-ok); }
+.sg-bg-node.t-late { border-left-color: var(--sg-warn); }
+.sg-bg-node.t-crit { border-left-color: var(--sg-bad); }
+
+.sg-bg-n-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .35rem;
+  font-family: var(--sg-mono);
+  font-size: .55rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  opacity: .58;
+}
+.sg-bg-n-seq { font-weight: 700; opacity: .9; }
+.sg-bg-n-title {
+  font-family: var(--sg-mono);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: .12rem 0 .1rem;
+  word-break: break-word;
+}
+.sg-bg-n-sub {
+  font-size: .66rem;
+  line-height: 1.25;
+  opacity: .68;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-bg-n-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .2rem .45rem;
+  margin-top: .3rem;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  opacity: .72;
+}
+.sg-bg-n-meta i { font-style: normal; opacity: .55; }
+.sg-bg-n-tags { display: flex; flex-wrap: wrap; gap: .22rem; margin-top: .32rem; }
+
+/* -- the finished machine, at the top ---------------------------------- */
+.sg-bg-node.k-order {
+  width: calc(var(--sg-bg-card) * 1.6);
+  padding: .75rem .85rem .8rem;
+  background: var(--sg-surface-2);
+  border: 2px solid var(--sg-accent);
+  border-left-width: 5px;
+  box-shadow: 0 3px 18px rgba(0, 0, 0, .25);
+}
+.sg-bg-node.k-order .sg-bg-n-title { font-size: 1.05rem; letter-spacing: -.01em; }
+.sg-bg-node.k-order .sg-bg-n-top { color: var(--sg-accent); opacity: .95; }
+
+.sg-bg-node.k-delivery { border-style: dashed; }
+.sg-bg-node.k-run      { background: var(--sg-surface-2); }
+.sg-bg-node.k-purchase { border-style: dotted; }
+
+/* A node that is also produced for other orders. */
+.sg-bg-node.is-shared { border-right: 3px solid var(--sg-accent-in); }
+
+/* -- the run frame ------------------------------------------------------
+   A translucent band behind every operation of one manufacturing order.
+   This is what makes the graph read as a BOM rather than a flowchart:
+   each frame is one part being made, and the cards inside it are how. */
+.sg-bg-frame {
+  position: absolute;
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: 5px;
+  background: rgba(128, 138, 145, .055);
+  pointer-events: none;
+}
+.sg-bg-frame.is-shared { border-color: rgba(232, 163, 61, .4); }
+.sg-bg-frame-lb {
+  position: absolute;
+  top: -.62rem;
+  left: .55rem;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  padding: 0 .4rem;
+  font-family: var(--sg-mono);
+  font-size: .6rem;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.sg-bg-frame-lb b { font-weight: 700; }
+.sg-bg-frame-lb:hover { color: var(--sg-accent); }
+
+/* -- expand / collapse handle ------------------------------------------ */
+.sg-bg-tog {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sg-mono);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2;
+}
+.sg-bg-tog:hover { border-color: var(--sg-accent); color: var(--sg-accent); }
+
+.sg-bg-count {
+  position: absolute;
+  right: -7px;
+  top: -7px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sg-mono);
+  font-size: .55rem;
+  font-weight: 700;
+  border: 1px solid var(--sg-rule);
+  border-radius: 8px;
+  background: var(--sg-surface-2);
+  opacity: .8;
+}
+
+/* -- zoomed out: the cards simplify so the shape stays readable -------- */
+.sg-bg-world.z-far .sg-bg-n-sub,
+.sg-bg-world.z-far .sg-bg-n-meta,
+.sg-bg-world.z-far .sg-bg-n-tags,
+.sg-bg-world.z-far .sg-bg-tog { display: none; }
+.sg-bg-world.z-far .sg-bg-node { padding: .3rem .45rem; }
+
+/* Far enough out that no text could be read anyway. Rather than render an
+   illegible smudge, the cards become solid blocks and the graph reads as a
+   structure map: how many branches, how deep, and where the late work is. */
+/* A card's height comes entirely from its content, so hiding the content
+   with display:none would collapse every block to nothing. Keep the boxes
+   in flow and hide only their ink, so each node stays exactly the size the
+   layout measured for it. */
+.sg-bg-world.z-tiny .sg-bg-n-top,
+.sg-bg-world.z-tiny .sg-bg-n-title,
+.sg-bg-world.z-tiny .sg-bg-n-sub,
+.sg-bg-world.z-tiny .sg-bg-n-meta,
+.sg-bg-world.z-tiny .sg-bg-n-tags { display: block; visibility: hidden; }
+.sg-bg-world.z-tiny .sg-bg-tog,
+.sg-bg-world.z-tiny .sg-bg-count,
+.sg-bg-world.z-tiny .sg-bg-frame-lb { display: none; }
+/* Solid blocks, not faint outlines. At a tenth of full size a 1px border
+   is invisible, so colour has to carry the whole message: green on time,
+   amber late, red critical, accent for the machine itself. */
+.sg-bg-world.z-tiny .sg-bg-node {
+  border: 0;
+  border-radius: 6px;
+  background: rgba(128, 138, 145, .55);
+}
+.sg-bg-world.z-tiny .sg-bg-node.t-ok   { background: rgba(47, 163, 106, .6); }
+.sg-bg-world.z-tiny .sg-bg-node.t-late { background: rgba(208, 138, 44, .78); }
+.sg-bg-world.z-tiny .sg-bg-node.t-crit { background: rgba(217, 83, 79, .82); }
+.sg-bg-world.z-tiny .sg-bg-node.k-order { background: var(--sg-accent); }
+.sg-bg-world.z-tiny .sg-bg-node.is-shared { outline: 8px solid var(--sg-accent-in); }
+.sg-bg-world.z-tiny .sg-bg-node.is-sel,
+.sg-bg-world.z-tiny .sg-bg-node.is-hit { outline: 10px solid var(--sg-accent); }
+.sg-bg-world.z-tiny .sg-bg-frame { border-width: 3px; border-color: var(--sg-rule); }
+.sg-bg-world.z-tiny .sg-bg-wire { stroke-width: 7; stroke: var(--sg-quiet); }
+.sg-bg-world.z-tiny .sg-bg-band { border-top-width: 3px; }
+
+/* ==================================================================
+   4. DETAIL DRAWER
+   ================================================================== */
+
+.sg-bg-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(430px, 94vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--sg-surface-2);
+  border-left: 2px solid var(--sg-rule);
+  box-shadow: -8px 0 26px rgba(0, 0, 0, .3);
+  z-index: 6;
+  transform: translateX(101%);
+  transition: transform .18s ease;
+  /* The theme's own page background, so the graph does not read through. */
+  backdrop-filter: blur(9px);
+}
+.sg-bg-panel.is-open { transform: none; }
+.sg-bg-panel-hd {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .8rem .9rem .6rem;
+  border-bottom: 2px solid var(--sg-rule);
+}
+.sg-bg-panel-hd h2 { font-family: var(--sg-mono); font-size: 1rem; margin: .1rem 0 0; word-break: break-all; }
+.sg-bg-panel-x {
+  margin-left: auto;
+  padding: 0 .35rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: inherit;
+  background: none;
+  border: 0;
+  opacity: .6;
+  cursor: pointer;
+}
+.sg-bg-panel-x:hover { opacity: 1; }
+.sg-bg-panel-bd { flex: 1 1 auto; overflow-y: auto; padding: .8rem .9rem 2rem; }
+
+.sg-bg-sec { margin: 0 0 1.1rem; }
+.sg-bg-sec > h3 {
+  font-family: var(--sg-mono);
+  font-size: .62rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  opacity: .55;
+  margin: 0 0 .4rem;
+  padding-bottom: .25rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+.sg-bg-kv { display: grid; grid-template-columns: 8.4em minmax(0, 1fr); gap: .22rem .6rem; margin: 0; font-size: .76rem; }
+.sg-bg-kv dt { font-family: var(--sg-mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; opacity: .55; padding-top: .12rem; }
+.sg-bg-kv dd { margin: 0; font-family: var(--sg-mono); font-size: .76rem; word-break: break-word; }
+
+.sg-bg-tb { width: 100%; border-collapse: collapse; font-family: var(--sg-mono); font-size: .68rem; }
+.sg-bg-tb th {
+  text-align: left;
+  font-size: .57rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  opacity: .5;
+  font-weight: 600;
+  padding: .18rem .35rem;
+  border-bottom: 1px solid var(--sg-rule);
+}
+.sg-bg-tb td { padding: .24rem .35rem; border-bottom: 1px solid var(--sg-rule-soft); vertical-align: top; }
+.sg-bg-tb tr.is-this td { background: var(--sg-surface-2); box-shadow: inset 2px 0 0 var(--sg-accent); }
+.sg-bg-tb td.num { text-align: right; }
+
+/* The allocation bar of a shared production run. */
+.sg-bg-alloc { display: flex; height: 12px; margin: .3rem 0 .55rem; border: 1px solid var(--sg-rule); border-radius: 2px; overflow: hidden; }
+.sg-bg-alloc i { display: block; height: 100%; }
+.sg-bg-alloc i.is-this { background: var(--sg-accent); }
+.sg-bg-alloc i.is-other { background: var(--sg-accent-in); opacity: .55; }
+.sg-bg-alloc i.is-free { background: var(--sg-rule-soft); }
+.sg-bg-alloc-key { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-family: var(--sg-mono); font-size: .6rem; opacity: .7; }
+.sg-bg-alloc-key i { display: inline-block; width: 8px; height: 8px; margin-right: .25rem; vertical-align: -1px; }
+
+.sg-bg-note { font-size: .72rem; opacity: .7; line-height: 1.45; margin: .35rem 0 .5rem; }
+.sg-bg-load { padding: 1.4rem .2rem; font-family: var(--sg-mono); font-size: .78rem; opacity: .6; }
+.sg-bg-ft { display: flex; flex-wrap: wrap; gap: .35rem; padding-top: .6rem; border-top: 1px solid var(--sg-rule-soft); }
+
+/* ==================================================================
+   5. LEGEND + SEARCH
+   ================================================================== */
+
+.sg-bg-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem 1.1rem;
+  padding: .5rem .2rem 0;
+  font-family: var(--sg-mono);
+  font-size: .64rem;
+  opacity: .68;
+}
+.sg-bg-key span { display: inline-flex; align-items: center; gap: .32rem; }
+.sg-bg-sw { display: inline-block; width: 16px; height: 9px; border: 1px solid var(--sg-rule); border-left-width: 3px; border-radius: 2px; background: var(--sg-surface-2); }
+.sg-bg-sw.t-ok { border-left-color: var(--sg-ok); }
+.sg-bg-sw.t-late { border-left-color: var(--sg-warn); }
+.sg-bg-sw.t-crit { border-left-color: var(--sg-bad); }
+.sg-bg-sw.t-share { border-right: 3px solid var(--sg-accent-in); }
+.sg-bg-sw.t-frame { background: rgba(128, 138, 145, .12); border-left-width: 1px; }
+
+/* Machine switcher - a plain link menu, so no scroll or key press can
+   navigate the planner off this machine by accident. */
+.sg-bg-switch { position: relative; }
+.sg-bg-switch > summary { list-style: none; cursor: pointer; }
+.sg-bg-switch > summary::-webkit-details-marker { display: none; }
+.sg-bg-switch[open] > summary { border-color: var(--sg-accent); color: var(--sg-accent); }
+.sg-bg-switch-menu { right: 0; left: auto; max-height: 18rem; }
+.sg-bg-switch-menu a {
+  display: block;
+  padding: .26rem .4rem;
+  font-family: var(--sg-mono);
+  font-size: .68rem;
+  color: inherit;
+  border-radius: 2px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sg-bg-switch-menu a:hover { background: var(--sg-rule-soft); color: inherit; text-decoration: none; }
+.sg-bg-switch-menu em { font-style: normal; opacity: .55; }
+
+.sg-bg-find { position: relative; }
+.sg-bg-hits {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 9;
+  min-width: 15rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: .2rem;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+  backdrop-filter: blur(10px);
+}
+.sg-bg-hits button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: .26rem .4rem;
+  font-family: var(--sg-mono);
+  font-size: .68rem;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.sg-bg-hits button:hover { background: var(--sg-rule-soft); }
+.sg-bg-hits em { font-style: normal; opacity: .55; }
+.sg-bg-hits p { margin: .3rem .4rem; font-size: .7rem; opacity: .6; }
+
+.sg-bg-msg {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  max-width: 34rem;
+  padding: 1.4rem 1.6rem;
+  text-align: center;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  z-index: 4;
+}
+
+@media (max-width: 760px) {
+  .sg-bg { height: calc(100vh - 60px); }
+  .sg-bg-rail { flex-basis: 64px; }
+  .sg-bg-panel { width: 100vw; }
+}
+
+/* ==================================================================
+   6. SHIPMENT MODE - the heart screen
+   ================================================================== */
+
+/* A quiet dot grid gives the canvas depth without competing with data. */
+.sg-bg-canvas {
+  background-image: radial-gradient(var(--sg-rule-soft) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+/* Cards lift a little; the shipment root glows. Translucent-only, so it
+   holds on every theme. */
+.sg-bg-node { box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
+.sg-bg-node:hover { transform: translateY(-1px); }
+.sg-bg-node.k-order {
+  box-shadow: 0 4px 22px rgba(46, 139, 163, .35), 0 3px 18px rgba(0, 0, 0, .25);
+}
+
+/* THE DELAY CHAIN - the run of links that sets the ship date. Nodes get
+   a warm ring; the wires thicken and their dashes crawl upstream, so the
+   eye follows the chain without reading a single label. */
+.sg-bg-node.is-cp {
+  border-color: var(--sg-warn);
+  box-shadow: 0 0 0 2px rgba(208, 138, 44, .55), 0 2px 12px rgba(0, 0, 0, .22);
+}
+.sg-bg-wire.is-cp {
+  stroke: var(--sg-warn);
+  stroke-width: 3.2;
+  stroke-dasharray: 9 7;
+  animation: sg-bg-crawl 1.4s linear infinite;
+}
+@keyframes sg-bg-crawl { to { stroke-dashoffset: -16; } }
+@media (prefers-reduced-motion: reduce) {
+  .sg-bg-wire.is-cp { animation: none; }
+}
+.sg-bg-sw.t-cp { border-left-color: var(--sg-warn);
+                 border-top: 2px dashed var(--sg-warn); background: none; }
+
+/* Blocker-card hover: flagged runs light up, the rest step back. */
+.sg-bg-node.is-flag {
+  border-color: var(--sg-bad);
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, .6), 0 2px 14px rgba(0, 0, 0, .25);
+}
+.sg-bg-node.is-faded { opacity: .18; }
+/* Blocker-card flagging, container-level - same trick as is-dimming:
+   one class on the world fades everything, the flagged runs opt out. */
+.sg-bg-world.is-flagging .sg-bg-node:not(.is-flag) { opacity: .18; }
+
+/* The rail itself: what is holding this shipment, with the fixes. */
+.sg-bg-blockers {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  z-index: 4;
+  width: min(270px, 42vw);
+  max-height: calc(100% - 1.2rem);
+  overflow-y: auto;
+  padding: .55rem .6rem .6rem;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(8px);
+}
+.sg-bg-blockers-t {
+  margin: 0 0 .45rem;
+  font-family: var(--sg-mono);
+  font-size: .62rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  opacity: .6;
+}
+.sg-bg-blk {
+  padding: .5rem .55rem;
+  margin-bottom: .45rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule-soft);
+  border-left: 3px solid var(--sg-bad);
+  border-radius: 3px;
+  cursor: default;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.sg-bg-blk:hover, .sg-bg-blk:focus {
+  border-color: var(--sg-bad);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
+  outline: none;
+}
+.sg-bg-blk-hd {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: .4rem; margin: 0 0 .3rem;
+}
+.sg-bg-blk-hd b { font-family: var(--sg-mono); font-size: .82rem; }
+.sg-bg-blk-hd span { font-size: .64rem; opacity: .65; white-space: nowrap; }
+.sg-bg-blk-fix { margin: .22rem 0 0; font-size: .7rem; line-height: 1.45; }
+.sg-bg-blk-fix i {
+  font-style: normal; font-family: var(--sg-mono); font-size: .56rem;
+  letter-spacing: .1em; text-transform: uppercase; opacity: .55;
+  margin-right: .25rem;
+}
+.sg-bg-blk-note { margin: .3rem 0 0; font-size: .66rem; opacity: .6;
+                  line-height: 1.4; }
+
+@media (max-width: 900px) {
+  .sg-bg-blockers { position: static; width: auto; max-height: 11rem;
+                    order: 2; }
+}
+
+/* ==================================================================
+   7. THE HEART-SCREEN LOOK
+   ================================================================== */
+
+/* Run cards: soft, rounded, status told by a dot and an edge glow
+   rather than a flat border - translucent throughout, so every theme
+   keeps its own ground. */
+.sg-bg.is-ship .sg-bg-node {
+  border-radius: 10px;
+  border-width: 1px;
+  border-left-width: 4px;
+  padding: .5rem .65rem .55rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(0, 0, 0, .04)),
+    var(--sg-surface-2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .16);
+  transition: box-shadow .15s ease, transform .15s ease,
+              border-color .15s ease, opacity .12s ease;
+}
+.sg-bg.is-ship .sg-bg-node:hover {
+  transform: translateY(-2px) scale(1.012);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
+}
+.sg-bg.is-ship .sg-bg-node.t-late {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .16), 0 0 14px rgba(208, 138, 44, .14);
+}
+.sg-bg.is-ship .sg-bg-n-title { letter-spacing: 0; }
+
+/* THE HERO - the shipment itself. One big glowing card the whole graph
+   hangs from. */
+.sg-bg.is-ship .sg-bg-node.k-order {
+  width: calc(var(--sg-bg-card) * 2.1);
+  padding: 1rem 1.2rem 1.05rem;
+  border-radius: 14px;
+  border: 1px solid rgba(46, 139, 163, .65);
+  border-left-width: 1px;
+  background:
+    linear-gradient(135deg, rgba(46, 139, 163, .22), rgba(46, 139, 163, .05) 55%),
+    var(--sg-surface-2);
+  box-shadow:
+    0 10px 40px rgba(46, 139, 163, .28),
+    0 4px 18px rgba(0, 0, 0, .3);
+}
+.sg-bg.is-ship .sg-bg-node.k-order .sg-bg-n-title {
+  font-size: 1.35rem;
+  letter-spacing: .01em;
+}
+.sg-bg.is-ship .sg-bg-node.k-order .sg-bg-n-meta {
+  gap: .4rem .9rem;
+  font-size: .68rem;
+  margin-top: .45rem;
+}
+.sg-bg.is-ship .sg-bg-node.k-order .sg-bg-n-tags .sg-bg-pill {
+  font-size: .66rem;
+  padding: .2rem .5rem;
+}
+
+/* Wires carry status: calm teal-grey for on-time flow, amber for late.
+   The delay chain overrides both. */
+.sg-bg-wire { stroke-width: 1.3; opacity: .55; }
+.sg-bg-wire.w-ok   { stroke: rgba(47, 163, 106, .5); }
+.sg-bg-wire.w-late { stroke: rgba(208, 138, 44, .55); }
+.sg-bg-wire.w-crit { stroke: rgba(217, 83, 79, .6); }
+.sg-bg-wire:hover { opacity: 1; }
+
+/* The walkthrough focus: the card the tour is standing on. */
+/* The focused card has to be findable the instant the scroll stops, on a
+   page of 900 near-identical cards. So: a thick amber ring that breathes
+   out to a wide halo, a lift, and a brightened surface - and the card is
+   raised above its neighbours so the halo is never clipped by them. */
+.sg-bg .sg-bg-node.is-cp-focus,
+.sg-bg.is-ship .sg-bg-node.is-cp-focus,
+.sg-bg.is-ship .sg-bg-node.k-order.is-cp-focus {
+  animation: sg-bg-pulse 1.6s ease-in-out infinite;
+  border-color: var(--sg-warn);
+  border-left-color: var(--sg-warn);
+  background-color: var(--sg-surface) !important;
+  transform: scale(1.06);
+  z-index: 8;
+}
+@keyframes sg-bg-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(208, 138, 44, .85),
+                0 0 18px 2px rgba(208, 138, 44, .45),
+                0 8px 24px rgba(0, 0, 0, .35);
+  }
+  50% {
+    box-shadow: 0 0 0 16px rgba(208, 138, 44, .10),
+                0 0 34px 8px rgba(208, 138, 44, .30),
+                0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+/* Reduced motion keeps the ring and drops only the breathing. The
+   selector has to outrank `.sg-bg.is-ship .sg-bg-node.k-order`, which
+   carries its own glow - a bare `.sg-bg-node.is-cp-focus` loses to it
+   and the focused card ends up looking exactly like its neighbours. */
+@media (prefers-reduced-motion: reduce) {
+  .sg-bg .sg-bg-node.is-cp-focus,
+  .sg-bg.is-ship .sg-bg-node.is-cp-focus,
+  .sg-bg.is-ship .sg-bg-node.k-order.is-cp-focus {
+    box-shadow: 0 0 0 5px rgba(208, 138, 44, .9),
+                0 0 26px 6px rgba(208, 138, 44, .4),
+                0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+.sg-bg-btn-follow { border-color: var(--sg-warn); color: var(--sg-warn); }
+.sg-bg-btn-follow:hover { background: rgba(208, 138, 44, .12); }
+
+/* Entrance: each level materialises under the one it feeds. Once. */
+.sg-bg-world.sg-enter .sg-bg-node {
+  animation: sg-bg-in .55s cubic-bezier(.2, .7, .3, 1) both;
+  animation-delay: var(--sg-d, 0ms);
+}
+.sg-bg-world.sg-enter .sg-bg-wires { animation: sg-bg-fade 1s .3s both; }
+@keyframes sg-bg-in {
+  from { opacity: 0; transform: translateY(-14px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes sg-bg-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sg-bg-world.sg-enter .sg-bg-node,
+  .sg-bg-world.sg-enter .sg-bg-wires { animation: none; }
+  .sg-bg-node.is-cp-focus { animation: none; }
+}
+
+/* Structure view: the level rules read as shelves, not gridlines. */
+.sg-bg.is-ship .sg-bg-band {
+  border-top: 1px solid var(--sg-rule-soft);
+}
+.sg-bg.is-ship .sg-bg-band.is-major { border-top-color: rgba(46, 139, 163, .5); }
+
+/* PERFORMANCE, found the honest way: headless Chromium could not paint a
+   frame of an 880-card shipment inside 5 seconds. The culprit is the
+   per-node backdrop-filter - each card forces a blur sample of the dot
+   grid behind it, fine at 69 nodes in order mode and deadly at 900+. In
+   ship mode cards drop the blur and take a second translucent layer
+   instead; a faint wire ghosting through a card is a fair price for a
+   page that scrolls. */
+/* background-color + background-image, NOT the shorthand. A colour may
+   only occupy the shorthand's final slot, so `background: <gradient>,
+   <color>, <color>` is invalid - and because the colours arrive through
+   var(), it is invalid AT COMPUTED-VALUE TIME, which resets background
+   to its INITIAL value (transparent) rather than falling back to the
+   rule above. That turned every card see-through and let 2,400 wires
+   read as if they were painted on top of the cards. */
+.sg-bg.is-ship .sg-bg-node {
+  backdrop-filter: none;
+  background-color: var(--sg-surface-2);
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(0, 0, 0, .04));
+}
+.sg-bg.is-ship .sg-bg-node.k-order {
+  backdrop-filter: none;
+  background-color: var(--sg-surface-2);
+  background-image:
+    linear-gradient(135deg, rgba(46, 139, 163, .22), rgba(46, 139, 163, .05) 55%);
+}

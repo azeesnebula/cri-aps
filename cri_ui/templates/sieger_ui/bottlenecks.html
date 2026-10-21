@@ -1,0 +1,87 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Bottlenecks by week</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    Machine-group load against capacity, busiest first &mdash; booked hours
+    (run <em>and</em> setup) over the hours each machine's own shift calendar
+    actually provides that week, so holidays and shutdowns count. This is the
+    input to the outsourcing decision: a group over the threshold in week N is
+    the work to subcontract or re-time.
+  </p>
+
+  <div class="sg-rp-facts">
+    <span class="sieger-stat"><b>{{ groups|length }}</b> groups loaded</span>
+    {% if hot_total %}
+    <span class="sieger-stat sieger-stat-warn"><b>{{ hot_total }}</b> group-weeks at &ge;{{ threshold }}%</span>
+    {% else %}
+    <span class="sieger-stat sieger-stat-ok">nothing over {{ threshold }}%</span>
+    {% endif %}
+    <span class="sieger-stat sieger-stat-quiet">
+      threshold
+      <a class="sieger-btn{% if threshold == 75 %} sieger-btn-go{% endif %}" href="?pct=75">75%</a>
+      <a class="sieger-btn{% if threshold == 85 %} sieger-btn-go{% endif %}" href="?pct=85">85%</a>
+      <a class="sieger-btn{% if threshold == 95 %} sieger-btn-go{% endif %}" href="?pct=95">95%</a>
+    </span>
+  </div>
+
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl sg-rp-heat">
+      <thead>
+        <tr>
+          <th>machine group</th>
+          <th class="num">machines</th>
+          {% for w in weeks %}<th class="num">{{ w|date:"d M" }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in groups %}
+        <tr>
+          <td class="mono"><a href="{{request.prefix}}/resource/{{ g.grp|urlencode }}/">{{ g.grp }}</a></td>
+          <td class="num">{{ g.machines }}</td>
+          {% for c in g.row %}
+            {% if c %}
+            <td class="num sg-rp-cell{% if c.over %} is-over{% elif c.hot %} is-hot{% endif %}"
+                title="{{ c.hours }}h booked of {{ c.avail }}h available">{{ c.util }}%</td>
+            {% else %}
+            <td class="num sg-rp-cell is-idle">&mdash;</td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ weeks|length|add:2 }}" class="sg-rp-empty-row">
+            No capacity data yet. The plan writes it at the end of every run, and
+            clears it at the start &mdash; so this screen is empty while a plan is
+            running, and until the first run finishes.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sg-rp-note">
+    Subcontract groups run on vendor calendars with no finite capacity, so they
+    never appear here. Utilisation above 100% means the solver had to book
+    outside regular shifts or the group is genuinely infeasible that week
+    &mdash; check <a href="{{request.prefix}}/constraint/">why late</a>.
+  </p>
+
+</div>
+{% endblock %}

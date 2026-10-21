@@ -1,0 +1,47 @@
+<div class="sg-work-overview-grid">
+  <section class="sg-work-card sg-work-reasons" aria-labelledby="reasons-title">
+    <div class="sg-work-card-heading"><div><span class="sg-work-eyebrow">Shipment-wide exceptions</span><h2 id="reasons-title">Delay reasons &amp; blockers</h2></div><span class="sg-work-total">{{ blockers|length }} groups</span></div>
+    <p class="sg-work-note">All recorded blockers &middot; unplanned and late orders first &middot; overlapping impact counts</p>
+    {% if position.unplanned or uncertain_orders or without_evidence %}<div class="sg-work-exceptions">
+      {% if position.unplanned %}<a href="#orders-unplanned"><b>{{ position.unplanned }} without a finish date.</b> Full delivery remains unknown.</a>{% endif %}
+      {% if uncertain_orders %}<a href="#orders-incomplete"><b>{{ position.short }} quantity gaps &middot; {{ position.unknown }} missing due dates.</b> Review coverage.</a>{% endif %}
+      {% if without_evidence %}<span><b>{{ without_evidence }} late or unplanned orders have no recorded blocker.</b> Their delay cause is not established by this plan.</span>{% endif %}
+    </div>{% endif %}
+    <div data-page-table data-page-size="3" data-mobile-page-size="2" data-search-table>
+      <div class="sg-work-order-tools sg-js-only">
+        <div class="sg-work-search"><label class="sg-work-label" for="reason-search">Find a blocker</label><input id="reason-search" data-table-search class="sg-work-input" type="search" placeholder="Material, machine, reason or order…" /></div>
+        <div><label class="sg-work-label" for="reason-kind">Constraint type</label><select id="reason-kind" data-table-filter class="sg-work-input"><option value="">All types</option>{% for kind in blocker_kinds %}<option value="{{ kind }}">{{ kind|capfirst }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="sg-evidence-scroll"><table class="sg-ship-tb sg-work-reason-table">
+        <thead><tr><th scope="col">Blocker / recorded reason</th><th scope="col">Shipment impact</th><th scope="col">Planner's next check</th></tr></thead>
+        <tbody>{% for b in blockers %}<tr data-page-row data-kind="{{ b.kind }}" data-search-extra="{% for o in b.orders %}{{ o.name }} {{ o.item_id }} {% endfor %}">
+          <td data-label="Blocker / reason"><span class="sg-work-label">{{ b.kind|capfirst }}</span><b>{% if b.material %}{{ b.material.item }}{% else %}{{ b.owner|default:"Owner not recorded" }}{% endif %}</b><p>{{ b.summary }}</p>{% if b.material %}<small>{{ b.material.supplier }} &middot; {{ b.material.location }}<br>Stock: {% for stock in b.material.stock %}{{ stock.onhand|floatformat:"-2" }}{% empty %}not recorded{% endfor %} &middot; Lead time: {% for rule in b.material.suppliers %}{{ rule.leadtime|default_if_none:"not recorded" }}{% if not forloop.last %}; {% endif %}{% empty %}not recorded{% endfor %}</small>{% endif %}<small>{{ b.first_conflict|date:"d M Y"|default:"Date unknown" }} &ndash; {{ b.last_conflict|date:"d M Y"|default:"Date unknown" }} &middot; {{ b.records|length }} records</small></td>
+          <td data-label="Shipment impact"><span class="sg-work-state {% if b.late %}is-late{% endif %}">{{ b.late }} late</span><br><span class="sg-work-state {% if b.unplanned %}is-bad{% endif %}">{{ b.unplanned }} unplanned</span><small>{{ b.on_time }} on time{% if b.short %} &middot; {{ b.short }} quantity gaps{% endif %}</small></td>
+          <td data-label="Next check"><p>{{ b.next_check }}</p><a class="sg-work-text-link" href="#{{ b.anchor }}">Dates &amp; affected orders &rarr;</a></td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="sg-work-empty" data-page-empty{% if blockers %} hidden{% endif %}>{% if blockers %}No matching blockers. Try another type or clear the search.{% else %}No constraint records are saved for this shipment.{% if position.late or position.incomplete %} This does not establish that supply is clear.{% else %} Delivery dates are on target in the saved plan.{% endif %}{% endif %}</p>
+      <div data-page-controls></div>
+    </div>
+    <p class="sg-work-note sg-work-method">These are solver-recorded conflicts, not a proven critical path. A review or replan is needed to establish which changes improve delivery.</p>
+  </section>
+  <details class="sg-work-health-disclosure" open data-mobile-collapse><summary>Execution health &amp; latest delivery</summary><aside class="sg-work-health" aria-label="Shipment health">
+    <section class="sg-work-card">
+      <span class="sg-work-eyebrow">Execution health</span><h2>Progress &amp; exceptions</h2>
+      <a href="#orders-ontime" class="sg-work-health-row"><strong class="is-ok">{{ position.on_time }}</strong><span>orders scheduled on time<small>Date-based; quantity gaps are flagged separately.</small></span></a>
+      <a href="#plan" class="sg-work-health-row"><strong>{{ progress.complete }}<small>/ {{ progress.total }}</small></strong><span>production steps recorded complete<small>{{ progress.pct }}% of linked steps</small></span></a>
+      <progress class="sg-work-progress" value="{{ progress.complete }}" max="{{ progress.total|default:1 }}" aria-label="Production steps recorded complete"></progress>
+      <a href="#plan" class="sg-work-health-row"><strong class="{% if progress.overdue %}is-bad{% endif %}">{{ progress.overdue }}</strong><span>past-finish steps not complete<small>Compared with {{ checked_at|date:"d M Y" }}; verify actual progress.</small></span></a>
+      <a href="#materials" class="sg-work-health-row"><strong class="{% if supply_position.overdue %}is-bad{% endif %}">{{ supply_position.overdue }}</strong><span>past-due linked receipts<small>{{ supply_position.open }} open of {{ supply_position.total }} linked supply orders</small></span></a>
+    </section>
+    <section class="sg-work-card">
+      <span class="sg-work-eyebrow">Delivery driver</span><h2>Latest-finishing order</h2>
+      {% if position.latest_order %}{% with o=position.latest_order %}
+      <b class="sg-work-driver">{{ o.name }}</b><p class="sg-work-note">{{ o.item_descr|default:o.item_id }}</p>
+      <dl class="sg-work-facts"><div><dt>Due</dt><dd>{{ o.due|date:"d M Y H:i"|default:"Not recorded" }}</dd></div><div><dt>Delivery</dt><dd>{{ o.deliverydate|date:"d M Y H:i" }}</dd></div></dl>
+      {% if position.latest_count > 1 %}<p class="sg-work-note">{{ position.latest_count }} orders share this finish; one is shown.</p>{% endif %}
+      <a class="sg-work-text-link" href="#orders-all">Review order coverage &rarr;</a>
+      {% endwith %}{% else %}<p class="sg-work-note">No order has a scheduled delivery.</p>{% endif %}
+    </section>
+  </aside></details>
+</div>

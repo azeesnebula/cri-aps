@@ -1,0 +1,57 @@
+[
+  {
+    "id": "pressure", "kind": "pain", "label": "The scheduling challenge",
+    "headline": "One change.\nA factory-wide ripple.",
+    "phrases": ["A delivery date is promised.", "Then a component arrives late.", "A machine is already full.", "And an urgent order changes everything.", "Which commitment is now at risk?"]
+  },
+  {
+    "id": "connected", "kind": "connect", "label": "A connected planning decision",
+    "headline": "Stop chasing updates.\nStart seeing the plan.",
+    "phrases": ["When orders, materials and capacity", "live in separate spreadsheets,", "planners spend their day chasing answers.", "Advanced Planning and Scheduling", "brings those decisions into one workspace."]
+  },
+  {
+    "id": "overview", "kind": "demo", "label": "Delivery visibility", "capture": "overview",
+    "headline": "See every commitment.",
+    "phrases": ["Here is the C. R. I. Pumps", "planning workspace in action.", "Start with shipment commitments:", "what is due,", "what the saved plan can deliver,", "and where attention is needed."]
+  },
+  {
+    "id": "orders", "kind": "demo", "label": "From shipment to action", "capture": "orders-all", "captureB": "orders-filtered",
+    "headline": "Find the work that matters.",
+    "phrases": ["Choose a shipment", "to focus on its production orders.", "Compare requested and planned quantities,", "check delivery status,", "and open the exact order", "you need to investigate."]
+  },
+  {
+    "id": "schedule", "kind": "demo", "label": "Finite-capacity scheduling", "capture": "schedule-board", "captureB": "schedule-detail",
+    "headline": "A place for every operation.",
+    "phrases": ["The machine board turns the plan", "into a sequence of operations.", "See which machine runs each job,", "and when.", "The schedule respects available capacity,", "shift calendars, maintenance and routing order.", "Click a bar to inspect the work."]
+  },
+  {
+    "id": "materials", "kind": "demo", "label": "Material and dependency visibility", "capture": "shipment-supply", "captureB": "graph-detail",
+    "headline": "Trace the promise back to the part.",
+    "phrases": ["A free machine is not enough", "if the right parts are missing.", "Inspect linked supply and purchase orders,", "then trace the build dependencies.", "Materials and upstream work", "belong in the same scheduling decision."]
+  },
+  {
+    "id": "capacity", "kind": "demo", "label": "Focus on the real constraint", "capture": "bottlenecks",
+    "headline": "Know where capacity is tight.",
+    "phrases": ["Compare weekly machine load", "with the capacity actually available.", "Identify the work centres", "that need attention,", "so discussions about extra shifts", "or different sequencing start with evidence."]
+  },
+  {
+    "id": "release", "kind": "demo", "label": "Planner-controlled execution", "capture": "release",
+    "headline": "Review. Resolve. Release.",
+    "phrases": ["When priorities change,", "review the constraints and replan.", "Before work reaches the floor,", "use the release window", "to review concerns and approve", "a controlled set of manufacturing orders."]
+  },
+  {
+    "id": "proof", "kind": "proof", "label": "Evidence from the demonstration plan", "capture": "overview",
+    "headline": "One plan.\nEvery connection accounted for.",
+    "phrases": ["In this demonstration plan:", "ten shipments, six hundred seventy pumps,", "and two hundred sixty machine operations.", "All ten shipments meet", "their capacity-checked due dates.", "The plan also passes", "machine, material and sequencing checks."]
+  },
+  {
+    "id": "value", "kind": "value", "label": "From expediting to informed decisions",
+    "headline": "Clear priorities.\nStronger delivery conversations.",
+    "phrases": ["For planners, clearer priorities.", "For production, a shared sequence.", "For customer-facing teams,", "delivery conversations grounded in the plan.", "Less guesswork.", "More informed decisions."]
+  },
+  {
+    "id": "close", "kind": "close", "label": "The next step",
+    "headline": "Let’s prove it\non your factory data.",
+    "phrases": ["Start with one product family", "and your actual factory data.", "Validate the constraints.", "Review the delivery outcomes.", "Then scale a planning process", "your team can trust."]
+  }
+]

@@ -1,0 +1,46 @@
+{% load i18n %}
+<table>
+  <tr>
+    <td style="vertical-align:top; padding:15px">
+      <button type="button" class="btn btn-primary" id="checkworkbook">{% trans "check"|capfirst %}</button>
+    </td>
+    <td style="padding:15px 15px 0 15px">
+      <p>
+        {% blocktrans %}Inspect a compatible Infor-LN planning workbook for C.R.I Pumps. This inspector expects numbered LN tabs; use the standard import above for frePPLe-format workbooks.{% endblocktrans %}
+        <br>
+        <strong>{% trans "Nothing is written" %}</strong>
+        {% blocktrans %}: this reports which sheets and columns were recognised, how many rows each holds, and what would have to be invented.{% endblocktrans %}
+      </p>
+      <input type="file" class="form-control" id="workbookfile" accept=".xlsx,.xlsm" style="max-width:28rem">
+      <div id="workbookresult" style="margin-top:1rem"></div>
+    </td>
+  </tr>
+</table>
+<script>
+$(function() {
+  $("#checkworkbook").click(function() {
+    var files = $("#workbookfile")[0].files;
+    if (!files.length) {
+      $("#workbookresult").html('<div class="alert alert-warning">{% trans "Choose a workbook first." %}</div>');
+      return;
+    }
+    var data = new FormData();
+    data.append("workbook", files[0]);
+    data.append("csrfmiddlewaretoken", $("input[name='csrfmiddlewaretoken']").first().val());
+    $("#checkworkbook").prop("disabled", true);
+    $("#workbookresult").html('<em>{% trans "Reading the workbook..." %}</em>');
+    $.ajax({
+      url: '{{request.prefix}}/planning-workbook/check/',
+      type: 'POST',
+      data: data,
+      processData: false,
+      contentType: false,
+      success: function(html) { $("#workbookresult").html(html); },
+      error: function(xhr) {
+        $("#workbookresult").html('<div class="alert alert-danger">' + (xhr.responseText || 'Upload failed') + '</div>');
+      },
+      complete: function() { $("#checkworkbook").prop("disabled", false); }
+    });
+  });
+});
+</script>

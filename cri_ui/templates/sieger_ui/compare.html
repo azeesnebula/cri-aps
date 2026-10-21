@@ -1,0 +1,86 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Scenario comparison</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    The live plan against a what-if sandbox, order by order. Copy the live
+    database into a scenario, change what you want to test &mdash; a rush
+    order, a machine down, a shift cut &mdash; replan there, then read the
+    difference here before deciding.
+  </p>
+
+  <div class="sg-rp-facts">
+    <span class="sieger-k">compare against</span>
+    {% for s in scenarios %}
+    <a class="sieger-btn{% if s == target %} sieger-btn-go{% endif %}" href="?scenario={{ s }}">{{ s }}</a>
+    {% endfor %}
+  </div>
+
+  {% if error %}
+  <div class="sieger-card sieger-card-note">
+    <p>{{ error }}</p>
+    <p>
+      Manage scenarios from
+      <a href="{{request.prefix}}/execute/#scenario_copy">Admin &rarr; Execute &rarr; scenario management</a>.
+    </p>
+  </div>
+  {% endif %}
+
+  {% if summary %}
+  <div class="sg-rp-facts">
+    <span class="sieger-stat"><b>{{ summary.compared }}</b> orders compared</span>
+    <span class="sieger-stat"><b>{{ summary.same }}</b> unchanged</span>
+    <span class="sieger-stat sieger-stat-warn"><b>{{ summary.later }}</b> deliver later</span>
+    <span class="sieger-stat sieger-stat-ok"><b>{{ summary.earlier }}</b> deliver earlier</span>
+    <span class="sieger-stat {% if summary.late_delta > 0 %}sieger-stat-bad{% elif summary.late_delta < 0 %}sieger-stat-ok{% else %}sieger-stat-quiet{% endif %}">
+      late orders: {{ summary.base_late }} live &rarr; {{ summary.other_late }} what-if
+      ({% if summary.late_delta > 0 %}+{% endif %}{{ summary.late_delta }})
+    </span>
+  </div>
+
+  {% if movers %}
+  <h2 class="sg-rp-h2">Biggest movers</h2>
+  <div class="sg-rp-tblwrap">
+    <table class="sg-rp-tbl">
+      <thead>
+        <tr><th>order</th><th>part</th><th>due</th>
+            <th>live plan</th><th>what-if</th><th class="num">shift</th></tr>
+      </thead>
+      <tbody>
+        {% for m in movers %}
+        <tr>
+          <td class="mono">{{ m.name }}</td>
+          <td class="mono">{{ m.item }}</td>
+          <td>{{ m.due|date:"d M" }}</td>
+          <td>{{ m.live|date:"d M H:i" }}</td>
+          <td>{{ m.whatif|date:"d M H:i" }}</td>
+          <td class="num{% if m.shift_d > 0 %} sg-rp-warncell{% endif %}">
+            {% if m.shift_d > 0 %}+{% endif %}{{ m.shift_d }} d
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="sg-rp-note">The two plans deliver every order at the same time.</p>
+  {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

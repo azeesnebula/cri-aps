@@ -1,0 +1,11 @@
+node_modules/
+out/
+public/audio/
+public/captures/
+public/captions.srt
+public/transcript.txt
+public/voiceover.wav
+public/score.wav
+public/score-raw.wav
+public/score.mp3
+public/mix.wav

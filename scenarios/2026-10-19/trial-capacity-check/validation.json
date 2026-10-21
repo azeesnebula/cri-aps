@@ -1,0 +1,45 @@
+{
+  "dataset": "CRI-PLANNING-20261019-v1",
+  "illustrative_inputs": true,
+  "passed": false,
+  "checks": {
+    "plan_task_done": true,
+    "plan_date_is_19_october_2026": true,
+    "exactly_10_shipments_20_lines_670_pumps": true,
+    "due_dates_match_source_dataset": true,
+    "all_order_quantities_planned": true,
+    "all_shipments_on_time": false,
+    "all_shipment_lines_together": true,
+    "production_not_before_plan_date": true,
+    "only_finite_leaf_machine_assignments": true,
+    "no_machine_overlaps": true,
+    "shifts_breaks_and_maintenance_respected": true,
+    "cycle_setup_and_efficiency_respected": true,
+    "routing_precedence_respected": true,
+    "material_balances_nonnegative": true,
+    "proposed_purchase_lead_times_respected": true
+  },
+  "latest_task": {
+    "id": 3,
+    "status": "Done",
+    "arguments": "--constraint=capa,mfg_lt,po_lt --plantype=1 --env=supply,nowebservice",
+    "started": "2026-10-17 13:54:28.330465",
+    "finished": "2026-10-17 13:54:30.398289",
+    "logfile": "frepple-20261017135428.log"
+  },
+  "shipments": 10,
+  "on_time_shipments": 4,
+  "total_pumps": 670.0,
+  "scheduled_machine_operations": 260,
+  "active_machine_hours": 1768.243,
+  "first_production_start": "2026-10-19 10:56:29",
+  "last_dispatch": "2026-11-19 08:17:40",
+  "errors": {
+    "overlaps": [],
+    "calendar": [],
+    "durations": [],
+    "precedence": [],
+    "materials": [],
+    "purchases": []
+  }
+}

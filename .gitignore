@@ -1,0 +1,22 @@
+# Local configuration, environments, generated assets and customer data
+.env
+.env.*
+!.env.example
+localsettings*
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+node_modules/
+.pnpm-store/
+build/
+dist/
+logs/
+/static/
+*.log
+*.xlsx
+*.XLSX
+*.dump
+/data/
+*.bak
+test-results/

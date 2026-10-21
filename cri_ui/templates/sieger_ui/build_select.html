@@ -1,0 +1,141 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Build graph - product picker.
+
+Every field on a card is a column of the demand table. The only derived
+number is the routing length, which also decides whether the order can be
+built at all. Nothing here is generated: an order with no routing says so
+rather than opening an empty graph.
+{% endcomment %}
+
+{% block extrastyle %}{{block.super}}
+<link rel="stylesheet" href="{{STATIC_URL}}sieger_ui/build-graph.css?v=12" />
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-bg-pick">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Build graph</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    Pick a production order to see everything that has to happen to build it
+    &mdash; every operation, on the date the plan plans it, from the delivery
+    at the top down to the earliest cut of raw material at the bottom.
+  </p>
+
+  {# ------------------------------------------------------------ filters #}
+  <div class="sg-bg-tools">
+    <div class="sg-bg-group">
+      <a class="sg-bg-btn" href="{{ request.prefix }}/build-graph/" title="{% trans 'back to the shipment map' %}">&larr; {% trans "build map" %}</a>
+    </div>
+
+    <form method="get" action=".">
+      <input class="sg-bg-search" type="search" name="q" value="{{ q }}"
+             placeholder="{% trans 'order, part or customer' %}"
+             aria-label="{% trans 'search orders' %}">
+      <input type="hidden" name="show" value="{{ show }}">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <button class="sg-bg-btn" type="submit">{% trans "search" %}</button>
+      {% if q %}<a class="sg-bg-btn" href="?show={{ show }}&amp;sort={{ sort }}">{% trans "clear" %}</a>{% endif %}
+    </form>
+
+    <div class="sg-bg-group">
+      <span class="sieger-k">{% trans "show" %}</span>
+      {% for key, label in filters %}
+      <a class="sg-bg-btn{% if key == show %} is-on{% endif %}"
+         href="?show={{ key }}&amp;sort={{ sort }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    <div class="sg-bg-group">
+      <span class="sieger-k">{% trans "sort" %}</span>
+      {% for key, label in sorts %}
+      <a class="sg-bg-btn{% if key == sort %} is-on{% endif %}"
+         href="?show={{ show }}&amp;sort={{ key }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    <div class="sg-bg-spacer"></div>
+    <span class="sieger-stat"><b>{{ page.paginator.count }}</b> of {{ total }} orders</span>
+  </div>
+
+  {# -------------------------------------------------------------- cards #}
+  {% if cards %}
+  <div class="sg-bg-cards">
+    {% for c in cards %}
+    <a class="sg-bg-card{% if not c.buildable %} is-block{% elif c.tone == 'late' %} is-late{% endif %}"
+       href="{{ request.prefix }}/build-graph/{{ c.name|urlencode }}/">
+      <div class="sg-bg-card-hd">
+        <span class="sg-bg-card-item">{{ c.item|default:"&mdash;" }}</span>
+        <span class="sg-bg-card-ord">{{ c.name }}</span>
+      </div>
+
+      <p class="sg-bg-card-desc">{{ c.description|default:"No description on the part master." }}</p>
+
+      <div class="sg-bg-card-grid">
+        <div class="sg-bg-f"><b>{{ c.quantity }}</b><span>{% trans "qty" %}</span></div>
+        <div class="sg-bg-f"><b>{{ c.due|date:"d M y"|default:"&mdash;" }}</b><span>{% trans "due" %}</span></div>
+        <div class="sg-bg-f"><b>{{ c.delivery|date:"d M y"|default:"&mdash;" }}</b><span>{% trans "planned" %}</span></div>
+        <div class="sg-bg-f"><b>{{ c.customer|default:"&mdash;" }}</b><span>{% trans "customer" %}</span></div>
+        <div class="sg-bg-f"><b>{{ c.priority }}</b><span>{% trans "priority" %}</span></div>
+        <div class="sg-bg-f"><b>{% if c.steps %}{{ c.steps }}{% else %}&mdash;{% endif %}</b><span>{% trans "steps" %}</span></div>
+      </div>
+
+      <div class="sg-bg-card-ft">
+        <span class="sg-bg-pill">{{ c.status }}</span>
+        {% if not c.buildable %}
+        <span class="sg-bg-pill is-crit">{% trans "no routing" %}</span>
+        {% elif c.delay_days > 0.05 %}
+        <span class="sg-bg-pill is-late">{{ c.delay_days }} {% trans "days late" %}</span>
+        {% else %}
+        <span class="sg-bg-pill is-ok">{% trans "on time" %}</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {# ------------------------------------------------------------- pager #}
+  {% if page.paginator.num_pages > 1 %}
+  <div class="sg-bg-pager">
+    {% if page.has_previous %}
+    <a class="sg-bg-btn" href="?page=1{{ querystring }}">&laquo; {% trans "first" %}</a>
+    <a class="sg-bg-btn" href="?page={{ page.previous_page_number }}{{ querystring }}">&larr;</a>
+    {% endif %}
+    <span>{% blocktrans with n=page.number total=page.paginator.num_pages %}page {{ n }} of {{ total }}{% endblocktrans %}</span>
+    {% if page.has_next %}
+    <a class="sg-bg-btn" href="?page={{ page.next_page_number }}{{ querystring }}">&rarr;</a>
+    <a class="sg-bg-btn" href="?page={{ page.paginator.num_pages }}{{ querystring }}">{% trans "last" %} &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="sg-bg-empty">
+    <p><b>{% trans "No orders match." %}</b></p>
+    <p>{% trans "Widen the filter, clear the search, or load work orders with the planning loader." %}</p>
+  </div>
+  {% endif %}
+
+  <div class="sg-bg-key">
+    <span><i class="sg-bg-sw t-ok"></i>{% trans "on time" %}</span>
+    <span><i class="sg-bg-sw t-late"></i>{% trans "late against the due date" %}</span>
+    <span><i class="sg-bg-sw t-crit"></i>{% trans "no routing - cannot be scheduled" %}</span>
+    <span>{% trans "Steps is the length of the part's routing." %}</span>
+  </div>
+
+</div>
+{% endblock %}

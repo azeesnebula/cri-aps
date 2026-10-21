@@ -1,0 +1,8 @@
+<nav class="sg-orders-pager" aria-label="Order pages">
+  <span>{% if page.paginator.count %}<b>{{ page.start_index }}&ndash;{{ page.end_index }}</b> of <b>{{ page.paginator.count }}</b> orders{% else %}<b>0</b> orders{% endif %}</span>
+  {% if page.has_other_pages %}<div>
+    {% if previous_url %}<a class="sg-orders-button" href="{{ previous_url }}" rel="prev">&larr; Previous</a>{% else %}<span class="sg-orders-button is-disabled" aria-disabled="true">&larr; Previous</span>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if next_url %}<a class="sg-orders-button" href="{{ next_url }}" rel="next">Next &rarr;</a>{% else %}<span class="sg-orders-button is-disabled" aria-disabled="true">Next &rarr;</span>{% endif %}
+  </div>{% endif %}
+</nav>

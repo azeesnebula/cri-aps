@@ -1,0 +1,124 @@
+﻿{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Build graph - the canvas.
+
+A shell only. The graph arrives as JSON from build-graph/<order>/data/ and
+build-graph.js lays it out client-side, so expanding or collapsing a branch
+re-flows instantly without a round trip.
+{% endcomment %}
+
+{% block extrastyle %}{{block.super}}
+<link rel="stylesheet" href="{{STATIC_URL}}sieger_ui/build-graph.css?v=18" />
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-bg"
+     data-order="{{ demand.name }}"
+     data-url="{{ request.prefix }}/build-graph/{{ demand.name|urlencode }}/data/"
+     data-run-url="{{ request.prefix }}/build-graph/run/"
+     data-op-url="{{ request.prefix }}/machine-schedule/op/">
+
+  {# ------------------------------------------------------------ toolbar #}
+  <div class="sg-bg-top">
+    <div class="sg-bg-group">
+      <a class="sg-bg-btn" href="{{ request.prefix }}/build-graph/" title="{% trans 'back to the shipment map' %}">&larr; {% trans "build map" %}</a>
+      <a class="sg-bg-btn" href="{{ request.prefix }}/build-graph/orders/" title="{% trans 'back to the order list' %}">{% trans "orders" %}</a>
+      <a class="sg-bg-btn" href="{{ request.prefix }}/projects/{{ demand.name|urlencode }}/" title="{% trans 'the same order as rows on a date axis' %}">{% trans "timeline" %}</a>
+    </div>
+
+    <div class="sg-bg-group sg-bg-find">
+      <input class="sg-bg-search" type="search" id="sg-bg-q"
+             placeholder="{% trans 'find part, operation, machine or run' %}"
+             autocomplete="off" aria-label="{% trans 'search the graph' %}">
+      <div class="sg-bg-hits" id="sg-bg-hits" hidden></div>
+    </div>
+
+    <div class="sg-bg-group">
+      <button class="sg-bg-btn" type="button" data-act="expand">{% trans "expand all" %}</button>
+      <button class="sg-bg-btn" type="button" data-act="collapse">{% trans "collapse all" %}</button>
+    </div>
+
+    <div class="sg-bg-group">
+      <button class="sg-bg-btn" type="button" data-act="zoom-out" aria-label="{% trans 'zoom out' %}">&minus;</button>
+      <span class="sg-bg-zoom" id="sg-bg-zoom">100%</span>
+      <button class="sg-bg-btn" type="button" data-act="zoom-in" aria-label="{% trans 'zoom in' %}">+</button>
+      <button class="sg-bg-btn" type="button" data-act="fit">{% trans "fit" %}</button>
+      <button class="sg-bg-btn" type="button" data-act="reset">{% trans "reset" %}</button>
+    </div>
+
+    <div class="sg-bg-group">
+      <button class="sg-bg-btn" type="button" data-act="top" title="{% trans 'jump to the delivery date' %}">&uarr; {% trans "delivery" %}</button>
+      <button class="sg-bg-btn" type="button" data-act="bottom" title="{% trans 'jump to the earliest production date' %}">&darr; {% trans "earliest" %}</button>
+    </div>
+
+    <div class="sg-bg-spacer"></div>
+
+    {% comment %}
+    A link menu, deliberately NOT a <select> that navigates on change: this
+    page is panned and scrolled constantly, and a wheel or arrow key landing
+    on such a select silently throws the planner onto a different machine.
+    {% endcomment %}
+    {% if siblings %}
+    <details class="sg-bg-group sg-bg-switch">
+      <summary class="sg-bg-btn" title="{% trans 'switch to another machine' %}">
+        {{ demand.name }} &middot; {{ demand.item_id }} &#9662;
+      </summary>
+      <div class="sg-bg-hits sg-bg-switch-menu">
+        {% for s in siblings %}
+        <a href="{{ request.prefix }}/build-graph/{{ s.name|urlencode }}/">{{ s.name }}
+          <em>{{ s.item_id }} &middot; due {{ s.due|date:"d M y" }}</em></a>
+        {% endfor %}
+        <a href="{{ request.prefix }}/build-graph/orders/">{% trans "all orders" %}&hellip;</a>
+      </div>
+    </details>
+    {% endif %}
+  </div>
+
+  {# ------------------------------------------------------------- canvas #}
+  <div class="sg-bg-stage">
+    <div class="sg-bg-rail" id="sg-bg-rail" aria-hidden="true">
+      <div class="sg-bg-rail-in" id="sg-bg-rail-in"></div>
+    </div>
+
+    <div class="sg-bg-canvas" id="sg-bg-canvas" tabindex="0">
+      <div class="sg-bg-world" id="sg-bg-world">
+        <svg class="sg-bg-wires" id="sg-bg-wires" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div class="sg-bg-msg" id="sg-bg-msg">
+      <p class="sg-bg-load">{% trans "building the graph" %}&hellip;</p>
+    </div>
+
+    {# ------------------------------------------------------------ panel #}
+    <aside class="sg-bg-panel" id="sg-bg-panel" aria-live="polite">
+      <div class="sg-bg-panel-hd">
+        <div>
+          <p class="sieger-eyebrow" id="sg-bg-panel-kind">&nbsp;</p>
+          <h2 id="sg-bg-panel-title">&nbsp;</h2>
+        </div>
+        <button class="sg-bg-panel-x" type="button" id="sg-bg-panel-x"
+                aria-label="{% trans 'close' %}">&times;</button>
+      </div>
+      <div class="sg-bg-panel-bd" id="sg-bg-panel-bd"></div>
+    </aside>
+  </div>
+
+  {# ------------------------------------------------------------- legend #}
+  <div class="sg-bg-key">
+    <span><i class="sg-bg-sw t-ok"></i>{% trans "on time" %}</span>
+    <span><i class="sg-bg-sw t-late"></i>{% trans "late" %}</span>
+    <span><i class="sg-bg-sw t-crit"></i>{% trans "critical" %}</span>
+    <span><i class="sg-bg-sw t-share"></i>{% trans "shared - also built for other orders" %}</span>
+    <span><i class="sg-bg-sw t-frame"></i>{% trans "one production run" %}</span>
+    <span>{% trans "Down the page is backwards in time. Click any card for detail; hover to light up its chain to delivery." %}</span>
+  </div>
+
+</div>
+
+<script src="{{STATIC_URL}}sieger_ui/build-graph.js?v=9"></script>
+{% endblock %}

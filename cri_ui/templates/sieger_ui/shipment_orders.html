@@ -1,0 +1,18 @@
+<div data-page-table data-page-size="8" id="shipment-order-table">
+  <div data-page-controls></div>
+  <div class="sg-evidence-scroll" role="region" aria-label="Orders and recorded blockers" tabindex="0">
+    <table class="sg-ship-tb sg-work-orders-table">
+      <thead><tr><th scope="col">Order / part</th><th scope="col" class="n">Required / planned</th><th scope="col">Due / delivery</th><th scope="col">Status</th><th scope="col">Recorded evidence</th></tr></thead>
+      <tbody>{% for o in orders %}<tr data-page-row data-state="{{ o.state }}" data-incomplete="{% if o.short or o.state == 'unknown' %}true{% else %}false{% endif %}">
+        <td data-label="Order / part"><a href="{{ o.graph_url }}"><b>{{ o.name }} &nearr;</b></a><small>{{ o.item_descr|default:o.item_id }}</small><small>{{ o.item_id }}</small>{% if not selected_shipment %}<small title="{{ o.shipment_tag }}">{{ o.shipment_name }}</small>{% endif %}</td>
+        <td class="n" data-label="Required / planned">{{ o.quantity|floatformat:"-2" }} / {% if o.plannedquantity is None %}Unknown{% else %}{{ o.plannedquantity|floatformat:"-2" }}{% endif %}{% if o.short %}<small class="sg-work-text-bad">Incomplete quantity</small>{% endif %}</td>
+        <td data-label="Due / delivery">{{ o.due|date:"d M Y H:i"|default:"No due date" }}<small>{{ o.deliverydate|date:"d M Y H:i"|default:"No planned finish" }}</small></td>
+        <td data-label="Status"><span class="sg-work-state {% if o.state == 'late' %}is-late{% elif o.state == 'unplanned' %}is-bad{% elif o.state == 'on time' %}is-ok{% endif %}">{% if o.state == 'late' %}{{ o.late_d|floatformat:1 }} days late{% else %}{{ o.state|capfirst }}{% endif %}</span><small>Limit: {{ o.maxlateness|default_if_none:"Not recorded" }}</small></td>
+        <td data-label="Recorded evidence">{% for b in o.blockers %}{% if forloop.first %}<a class="sg-work-chip" href="#{{ b.anchor }}" title="{{ b.kind }}: {{ b.owner }}">{{ b.label|capfirst }} &middot; {{ b.subject }} &rarr;</a>{% endif %}{% empty %}<small>No saved constraint{% if o.state == 'late' or o.state == 'unplanned' %}; cause not established{% endif %}.</small>{% endfor %}
+          {% if o.blockers|length > 1 %}<details class="sg-work-row-more"><summary>{{ o.blockers|length|add:"-1" }} more blocker{{ o.blockers|length|add:"-1"|pluralize }}</summary>{% for b in o.blockers %}{% if not forloop.first %}<a class="sg-work-chip" href="#{{ b.anchor }}" title="{{ b.kind }}: {{ b.owner }}">{{ b.label|capfirst }} &middot; {{ b.subject }} &rarr;</a>{% endif %}{% endfor %}</details>{% endif %}
+          <a class="sg-work-text-link" href="{{ o.constraint_url }}">Order evidence &nearr;</a></td>
+      </tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  <p class="sg-work-empty" data-page-empty hidden>No orders match this view. Try another status or clear the search.</p>
+</div>

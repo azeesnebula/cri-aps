@@ -1,0 +1,168 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Projects overview - every order as one bar against its due date.
+
+The chart reuses the machine schedule's classes and %-geometry, so it
+inherits that stylesheet and needs no layout javascript. Each row is a
+link into the order's own timeline; the small triangle on the track is
+the due date, so a bar poking past its triangle IS the problem.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-sc sg-pj">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Projects</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    One bar per order &mdash; from its first planned operation to its last &mdash;
+    against the due date marker. Click a row for the full step-by-step timeline.
+  </p>
+
+  {# ------------------------------------------------------------ filters #}
+  <div class="sg-sc-bar-top">
+    <form method="get" action="." class="sg-pj-form">
+      <input class="sg-pj-search" type="search" name="q" value="{{ q }}"
+             placeholder="{% trans 'order, part or customer' %}"
+             aria-label="{% trans 'search orders' %}">
+      <input type="hidden" name="show" value="{{ show }}">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      {% if seq %}<input type="hidden" name="seq" value="{{ seq }}">{% endif %}
+      <button class="sieger-btn" type="submit">{% trans "search" %}</button>
+      {% if q %}<a class="sieger-btn" href="?show={{ show }}&amp;sort={{ sort }}{% if seq %}&amp;seq={{ seq|urlencode }}{% endif %}">{% trans "clear" %}</a>{% endif %}
+    </form>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">{% trans "show" %}</span>
+      {% for key, label in filters %}
+      <a class="sieger-btn{% if key == show %} sieger-btn-go{% endif %}"
+         href="?show={{ key }}&amp;sort={{ sort }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if seq %}&amp;seq={{ seq|urlencode }}{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    <div class="sg-sc-range">
+      <span class="sieger-k">{% trans "sort" %}</span>
+      {% for key, label in sorts %}
+      <a class="sieger-btn{% if key == sort %} sieger-btn-go{% endif %}"
+         href="?show={{ show }}&amp;sort={{ key }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if seq %}&amp;seq={{ seq|urlencode }}{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    {% if seqs %}
+    <div class="sg-sc-range">
+      <span class="sieger-k">{% trans "sequence" %}</span>
+      <a class="sieger-btn{% if not seq %} sieger-btn-go{% endif %}"
+         href="?show={{ show }}&amp;sort={{ sort }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">all</a>
+      {% for s in seqs %}
+      <a class="sieger-btn{% if s == seq %} sieger-btn-go{% endif %}"
+         href="?show={{ show }}&amp;sort={{ sort }}&amp;seq={{ s|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">{{ s }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="sg-sc-facts">
+      <span class="sieger-stat"><b>{{ page.paginator.count }}</b> of {{ total }} orders</span>
+    </div>
+  </div>
+
+  {# -------------------------------------------------------------- chart #}
+  {% if rows %}
+  <div class="sg-sc-chart">
+
+    <div class="sg-sc-head">
+      <div class="sg-sc-name sg-sc-headname">{% trans "order" %}</div>
+      <div class="sg-sc-track">
+        {% for t in ticks %}
+        <div class="sg-sc-tick{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+             style="left:{{ t.left }}%;width:{{ t.width }}%">
+          <span>{{ t.label }}</span>
+        </div>
+        {% endfor %}
+        {% if now_pct is not None %}
+        <div class="sg-sc-now" style="left:{{ now_pct }}%" title="{% trans 'plan date' %}"></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% for r in rows %}
+    <div class="sg-sc-row sg-pj-row{% if r.tone == 'late' %} is-late{% endif %}">
+      <div class="sg-sc-name">
+        <a class="sg-pj-ord" href="{{ request.prefix }}/projects/{{ r.name|urlencode }}/">{{ r.name }}</a>
+        <span class="sg-sc-meta">{{ r.item }}{% if r.customer %} &middot; {{ r.customer }}{% endif %}
+          {% if r.category %} &middot; {{ r.category }}{% endif %}</span>
+      </div>
+
+      <div class="sg-sc-track sg-pj-track">
+        {% for t in ticks %}
+        <div class="sg-sc-col{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+             style="left:{{ t.left }}%;width:{{ t.width }}%"></div>
+        {% endfor %}
+        {% if now_pct is not None %}
+        <div class="sg-sc-now" style="left:{{ now_pct }}%"></div>
+        {% endif %}
+
+        {% if r.due_pct is not None %}
+        <div class="sg-pj-due" style="left:{{ r.due_pct }}%"
+             title="{% trans 'due' %} {{ r.due|date:'D d M Y' }}"></div>
+        {% endif %}
+
+        {% if r.planned %}
+        <a class="sg-sc-bar is-{{ r.tone }}"
+           href="{{ request.prefix }}/projects/{{ r.name|urlencode }}/"
+           style="left:{{ r.left }}%;width:{{ r.width }}%;top:calc(0 * var(--sg-sc-lane));"
+           title="{{ r.name }}&#10;{{ r.first_start|date:'D d M H:i' }} &rarr; {{ r.last_end|date:'D d M H:i' }}&#10;{{ r.steps }} step{{ r.steps|pluralize }} &middot; qty {{ r.quantity }}{% if r.delay_days > 0.05 %}&#10;{{ r.delay_days }} days late{% endif %}">
+          <span class="sg-sc-lbl">{{ r.steps }} step{{ r.steps|pluralize }}{% if r.delay_days > 0.05 %} &middot; {{ r.delay_days }}d late{% endif %}</span>
+        </a>
+        {% else %}
+        <span class="sg-pj-pill" title="{% trans 'no planned operations - usually a missing routing' %}">{% trans "not planned" %}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ------------------------------------------------------------- pager #}
+  {% if page.paginator.num_pages > 1 %}
+  <div class="sg-pj-pager">
+    {% if page.has_previous %}
+    <a class="sieger-btn" href="?page=1{{ querystring }}">&laquo; {% trans "first" %}</a>
+    <a class="sieger-btn" href="?page={{ page.previous_page_number }}{{ querystring }}">&larr;</a>
+    {% endif %}
+    <span>{% blocktrans with n=page.number total=page.paginator.num_pages %}page {{ n }} of {{ total }}{% endblocktrans %}</span>
+    {% if page.has_next %}
+    <a class="sieger-btn" href="?page={{ page.next_page_number }}{{ querystring }}">&rarr;</a>
+    <a class="sieger-btn" href="?page={{ page.paginator.num_pages }}{{ querystring }}">{% trans "last" %} &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# --------------------------------------------------------------- key #}
+  <div class="sg-sc-key">
+    <span><i class="sg-sc-sw is-ok"></i>{% trans "on time" %}</span>
+    <span><i class="sg-sc-sw is-late"></i>{% trans "late" %}</span>
+    <span><i class="sg-sc-sw sg-pj-sw-due"></i>{% trans "due date" %}</span>
+    <span><i class="sg-sc-sw sg-sc-sw-now"></i>{% trans "plan date" %}</span>
+    <span class="sg-sc-key-note">{% trans "A bar running past its due triangle is the problem to chase. Click the row for step-by-step detail." %}</span>
+  </div>
+
+  {% else %}
+  <div class="sieger-card sieger-card-note">
+    <p><b>{% trans "No orders match." %}</b></p>
+    <p>{% trans "Widen the filter, clear the search, or load work orders with the planning loader." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,723 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 4527,
+  "voice": "en-US-AndrewMultilingualNeural",
+  "scenes": [
+    {
+      "id": "pressure",
+      "kind": "pain",
+      "label": "The scheduling challenge",
+      "headline": "One change.\nA factory-wide ripple.",
+      "phrases": [
+        "A delivery date is promised.",
+        "Then a component arrives late.",
+        "A machine is already full.",
+        "And an urgent order changes everything.",
+        "Which commitment is now at risk?"
+      ],
+      "narration": "A delivery date is promised. Then a component arrives late. A machine is already full. And an urgent order changes everything. Which commitment is now at risk?",
+      "audio": "audio/pressure.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 10.608,
+      "frames": 353,
+      "captions": [
+        {
+          "text": "A delivery date is promised.",
+          "startMs": 587,
+          "endMs": 2492,
+          "timestampMs": 1539,
+          "confidence": null
+        },
+        {
+          "text": "Then a component arrives late.",
+          "startMs": 2728,
+          "endMs": 4311,
+          "timestampMs": 3519,
+          "confidence": null
+        },
+        {
+          "text": "A machine is already full.",
+          "startMs": 4510,
+          "endMs": 6415,
+          "timestampMs": 5462,
+          "confidence": null
+        },
+        {
+          "text": "And an urgent order changes everything.",
+          "startMs": 6626,
+          "endMs": 8964,
+          "timestampMs": 7795,
+          "confidence": null
+        },
+        {
+          "text": "Which commitment is now at risk?",
+          "startMs": 9200,
+          "endMs": 10945,
+          "timestampMs": 10072,
+          "confidence": null
+        }
+      ],
+      "from": 0
+    },
+    {
+      "id": "connected",
+      "kind": "connect",
+      "label": "A connected planning decision",
+      "headline": "Stop chasing updates.\nStart seeing the plan.",
+      "phrases": [
+        "When orders, materials and capacity",
+        "live in separate spreadsheets,",
+        "planners spend their day chasing answers.",
+        "Advanced Planning and Scheduling",
+        "brings those decisions into one workspace."
+      ],
+      "narration": "When orders, materials and capacity live in separate spreadsheets, planners spend their day chasing answers. Advanced Planning and Scheduling brings those decisions into one workspace.",
+      "audio": "audio/connected.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 12.72,
+      "frames": 417,
+      "captions": [
+        {
+          "text": "When orders, materials and capacity",
+          "startMs": 599,
+          "endMs": 2975,
+          "timestampMs": 1867,
+          "confidence": null
+        },
+        {
+          "text": "live in separate spreadsheets,",
+          "startMs": 2975,
+          "endMs": 5016,
+          "timestampMs": 3995,
+          "confidence": null
+        },
+        {
+          "text": "planners spend their day chasing answers.",
+          "startMs": 5215,
+          "endMs": 7690,
+          "timestampMs": 6452,
+          "confidence": null
+        },
+        {
+          "text": "Advanced Planning and Scheduling",
+          "startMs": 7926,
+          "endMs": 9795,
+          "timestampMs": 8909,
+          "confidence": null
+        },
+        {
+          "text": "brings those decisions into one workspace.",
+          "startMs": 9795,
+          "endMs": 13049,
+          "timestampMs": 11422,
+          "confidence": null
+        }
+      ],
+      "from": 353
+    },
+    {
+      "id": "overview",
+      "kind": "demo",
+      "label": "Delivery visibility",
+      "capture": "overview",
+      "headline": "See every commitment.",
+      "phrases": [
+        "Here is the C. R. I. Pumps",
+        "planning workspace in action.",
+        "Start with shipment commitments:",
+        "what is due,",
+        "what the saved plan can deliver,",
+        "and where attention is needed."
+      ],
+      "narration": "Here is the C. R. I. Pumps planning workspace in action. Start with shipment commitments: what is due, what the saved plan can deliver, and where attention is needed.",
+      "audio": "audio/overview.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 11.784,
+      "frames": 389,
+      "captions": [
+        {
+          "text": "Here is the C. R. I. Pumps",
+          "startMs": 599,
+          "endMs": 2307,
+          "timestampMs": 1527,
+          "confidence": null
+        },
+        {
+          "text": "planning workspace in action.",
+          "startMs": 2307,
+          "endMs": 3952,
+          "timestampMs": 3129,
+          "confidence": null
+        },
+        {
+          "text": "Start with shipment commitments:",
+          "startMs": 5921,
+          "endMs": 7541,
+          "timestampMs": 6731,
+          "confidence": null
+        },
+        {
+          "text": "what is due,",
+          "startMs": 7777,
+          "endMs": 8643,
+          "timestampMs": 8210,
+          "confidence": null
+        },
+        {
+          "text": "what the saved plan can deliver,",
+          "startMs": 8990,
+          "endMs": 10623,
+          "timestampMs": 9806,
+          "confidence": null
+        },
+        {
+          "text": "and where attention is needed.",
+          "startMs": 10723,
+          "endMs": 12083,
+          "timestampMs": 11403,
+          "confidence": null
+        }
+      ],
+      "from": 770
+    },
+    {
+      "id": "orders",
+      "kind": "demo",
+      "label": "From shipment to action",
+      "capture": "orders-all",
+      "captureB": "orders-filtered",
+      "headline": "Find the work that matters.",
+      "phrases": [
+        "Choose a shipment",
+        "to focus on its production orders.",
+        "Compare requested and planned quantities,",
+        "check delivery status,",
+        "and open the exact order",
+        "you need to investigate."
+      ],
+      "narration": "Choose a shipment to focus on its production orders. Compare requested and planned quantities, check delivery status, and open the exact order you need to investigate.",
+      "audio": "audio/orders.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 9.864,
+      "frames": 331,
+      "captions": [
+        {
+          "text": "Choose a shipment",
+          "startMs": 599,
+          "endMs": 1601,
+          "timestampMs": 1100,
+          "confidence": null
+        },
+        {
+          "text": "to focus on its production orders.",
+          "startMs": 1614,
+          "endMs": 3494,
+          "timestampMs": 2554,
+          "confidence": null
+        },
+        {
+          "text": "Compare requested and planned quantities,",
+          "startMs": 3730,
+          "endMs": 5957,
+          "timestampMs": 4843,
+          "confidence": null
+        },
+        {
+          "text": "check delivery status,",
+          "startMs": 6007,
+          "endMs": 7455,
+          "timestampMs": 6731,
+          "confidence": null
+        },
+        {
+          "text": "and open the exact order",
+          "startMs": 7542,
+          "endMs": 8916,
+          "timestampMs": 8302,
+          "confidence": null
+        },
+        {
+          "text": "you need to investigate.",
+          "startMs": 8916,
+          "endMs": 10153,
+          "timestampMs": 9534,
+          "confidence": null
+        }
+      ],
+      "from": 1159
+    },
+    {
+      "id": "schedule",
+      "kind": "demo",
+      "label": "Finite-capacity scheduling",
+      "capture": "schedule-board",
+      "captureB": "schedule-detail",
+      "headline": "A place for every operation.",
+      "phrases": [
+        "The machine board turns the plan",
+        "into a sequence of operations.",
+        "See which machine runs each job,",
+        "and when.",
+        "The schedule respects available capacity,",
+        "shift calendars, maintenance and routing order.",
+        "Click a bar to inspect the work."
+      ],
+      "narration": "The machine board turns the plan into a sequence of operations. See which machine runs each job, and when. The schedule respects available capacity, shift calendars, maintenance and routing order. Click a bar to inspect the work.",
+      "audio": "audio/schedule.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 15.576,
+      "frames": 502,
+      "captions": [
+        {
+          "text": "The machine board turns the plan",
+          "startMs": 599,
+          "endMs": 2629,
+          "timestampMs": 1638,
+          "confidence": null
+        },
+        {
+          "text": "into a sequence of operations.",
+          "startMs": 2629,
+          "endMs": 4620,
+          "timestampMs": 3624,
+          "confidence": null
+        },
+        {
+          "text": "See which machine runs each job,",
+          "startMs": 4869,
+          "endMs": 6959,
+          "timestampMs": 5914,
+          "confidence": null
+        },
+        {
+          "text": "and when.",
+          "startMs": 7245,
+          "endMs": 7838,
+          "timestampMs": 7541,
+          "confidence": null
+        },
+        {
+          "text": "The schedule respects available capacity,",
+          "startMs": 8087,
+          "endMs": 10462,
+          "timestampMs": 9274,
+          "confidence": null
+        },
+        {
+          "text": "shift calendars, maintenance and routing order.",
+          "startMs": 10525,
+          "endMs": 13853,
+          "timestampMs": 12189,
+          "confidence": null
+        },
+        {
+          "text": "Click a bar to inspect the work.",
+          "startMs": 14089,
+          "endMs": 15895,
+          "timestampMs": 14992,
+          "confidence": null
+        }
+      ],
+      "from": 1490
+    },
+    {
+      "id": "materials",
+      "kind": "demo",
+      "label": "Material and dependency visibility",
+      "capture": "shipment-supply",
+      "captureB": "graph-detail",
+      "headline": "Trace the promise back to the part.",
+      "phrases": [
+        "A free machine is not enough",
+        "if the right parts are missing.",
+        "Inspect linked supply and purchase orders,",
+        "then trace the build dependencies.",
+        "Materials and upstream work",
+        "belong in the same scheduling decision."
+      ],
+      "narration": "A free machine is not enough if the right parts are missing. Inspect linked supply and purchase orders, then trace the build dependencies. Materials and upstream work belong in the same scheduling decision.",
+      "audio": "audio/materials.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 12.792,
+      "frames": 419,
+      "captions": [
+        {
+          "text": "A free machine is not enough",
+          "startMs": 599,
+          "endMs": 2369,
+          "timestampMs": 1527,
+          "confidence": null
+        },
+        {
+          "text": "if the right parts are missing.",
+          "startMs": 2369,
+          "endMs": 3692,
+          "timestampMs": 3030,
+          "confidence": null
+        },
+        {
+          "text": "Inspect linked supply and purchase orders,",
+          "startMs": 3916,
+          "endMs": 6761,
+          "timestampMs": 5338,
+          "confidence": null
+        },
+        {
+          "text": "then trace the build dependencies.",
+          "startMs": 6874,
+          "endMs": 8779,
+          "timestampMs": 7826,
+          "confidence": null
+        },
+        {
+          "text": "Materials and upstream work",
+          "startMs": 9015,
+          "endMs": 10710,
+          "timestampMs": 9936,
+          "confidence": null
+        },
+        {
+          "text": "belong in the same scheduling decision.",
+          "startMs": 10710,
+          "endMs": 13098,
+          "timestampMs": 11904,
+          "confidence": null
+        }
+      ],
+      "from": 1992
+    },
+    {
+      "id": "capacity",
+      "kind": "demo",
+      "label": "Focus on the real constraint",
+      "capture": "bottlenecks",
+      "headline": "Know where capacity is tight.",
+      "phrases": [
+        "Compare weekly machine load",
+        "with the capacity actually available.",
+        "Identify the work centres",
+        "that need attention,",
+        "so discussions about extra shifts",
+        "or different sequencing start with evidence."
+      ],
+      "narration": "Compare weekly machine load with the capacity actually available. Identify the work centres that need attention, so discussions about extra shifts or different sequencing start with evidence.",
+      "audio": "audio/capacity.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 13.008,
+      "frames": 425,
+      "captions": [
+        {
+          "text": "Compare weekly machine load",
+          "startMs": 599,
+          "endMs": 2417,
+          "timestampMs": 1508,
+          "confidence": null
+        },
+        {
+          "text": "with the capacity actually available.",
+          "startMs": 2505,
+          "endMs": 4868,
+          "timestampMs": 3686,
+          "confidence": null
+        },
+        {
+          "text": "Identify the work centres",
+          "startMs": 5116,
+          "endMs": 6502,
+          "timestampMs": 5883,
+          "confidence": null
+        },
+        {
+          "text": "that need attention,",
+          "startMs": 6502,
+          "endMs": 7727,
+          "timestampMs": 7114,
+          "confidence": null
+        },
+        {
+          "text": "so discussions about extra shifts",
+          "startMs": 8037,
+          "endMs": 10376,
+          "timestampMs": 9255,
+          "confidence": null
+        },
+        {
+          "text": "or different sequencing start with evidence.",
+          "startMs": 10376,
+          "endMs": 13308,
+          "timestampMs": 11842,
+          "confidence": null
+        }
+      ],
+      "from": 2411
+    },
+    {
+      "id": "release",
+      "kind": "demo",
+      "label": "Planner-controlled execution",
+      "capture": "release",
+      "headline": "Review. Resolve. Release.",
+      "phrases": [
+        "When priorities change,",
+        "review the constraints and replan.",
+        "Before work reaches the floor,",
+        "use the release window",
+        "to review concerns and approve",
+        "a controlled set of manufacturing orders."
+      ],
+      "narration": "When priorities change, review the constraints and replan. Before work reaches the floor, use the release window to review concerns and approve a controlled set of manufacturing orders.",
+      "audio": "audio/release.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 12.096,
+      "frames": 398,
+      "captions": [
+        {
+          "text": "When priorities change,",
+          "startMs": 587,
+          "endMs": 2096,
+          "timestampMs": 1341,
+          "confidence": null
+        },
+        {
+          "text": "review the constraints and replan.",
+          "startMs": 2332,
+          "endMs": 4274,
+          "timestampMs": 3303,
+          "confidence": null
+        },
+        {
+          "text": "Before work reaches the floor,",
+          "startMs": 4522,
+          "endMs": 6130,
+          "timestampMs": 5326,
+          "confidence": null
+        },
+        {
+          "text": "use the release window",
+          "startMs": 6441,
+          "endMs": 7728,
+          "timestampMs": 7158,
+          "confidence": null
+        },
+        {
+          "text": "to review concerns and approve",
+          "startMs": 7728,
+          "endMs": 9757,
+          "timestampMs": 8816,
+          "confidence": null
+        },
+        {
+          "text": "a controlled set of manufacturing orders.",
+          "startMs": 9757,
+          "endMs": 12393,
+          "timestampMs": 11075,
+          "confidence": null
+        }
+      ],
+      "from": 2836
+    },
+    {
+      "id": "proof",
+      "kind": "proof",
+      "label": "Evidence from the demonstration plan",
+      "capture": "overview",
+      "headline": "One plan.\nEvery connection accounted for.",
+      "phrases": [
+        "In this demonstration plan:",
+        "ten shipments, six hundred seventy pumps,",
+        "and two hundred sixty machine operations.",
+        "All ten shipments meet",
+        "their capacity-checked due dates.",
+        "The plan also passes",
+        "machine, material and sequencing checks."
+      ],
+      "narration": "In this demonstration plan: ten shipments, six hundred seventy pumps, and two hundred sixty machine operations. All ten shipments meet their capacity-checked due dates. The plan also passes machine, material and sequencing checks.",
+      "audio": "audio/proof.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 15.816,
+      "frames": 509,
+      "captions": [
+        {
+          "text": "In this demonstration plan:",
+          "startMs": 587,
+          "endMs": 2071,
+          "timestampMs": 1329,
+          "confidence": null
+        },
+        {
+          "text": "ten shipments, six hundred seventy pumps,",
+          "startMs": 2319,
+          "endMs": 5004,
+          "timestampMs": 3661,
+          "confidence": null
+        },
+        {
+          "text": "and two hundred sixty machine operations.",
+          "startMs": 5079,
+          "endMs": 7801,
+          "timestampMs": 6440,
+          "confidence": null
+        },
+        {
+          "text": "All ten shipments meet",
+          "startMs": 8050,
+          "endMs": 9386,
+          "timestampMs": 8792,
+          "confidence": null
+        },
+        {
+          "text": "their capacity-checked due dates.",
+          "startMs": 9386,
+          "endMs": 11514,
+          "timestampMs": 10450,
+          "confidence": null
+        },
+        {
+          "text": "The plan also passes",
+          "startMs": 11762,
+          "endMs": 13012,
+          "timestampMs": 12467,
+          "confidence": null
+        },
+        {
+          "text": "machine, material and sequencing checks.",
+          "startMs": 13012,
+          "endMs": 16106,
+          "timestampMs": 14559,
+          "confidence": null
+        }
+      ],
+      "from": 3234
+    },
+    {
+      "id": "value",
+      "kind": "value",
+      "label": "From expediting to informed decisions",
+      "headline": "Clear priorities.\nStronger delivery conversations.",
+      "phrases": [
+        "For planners, clearer priorities.",
+        "For production, a shared sequence.",
+        "For customer-facing teams,",
+        "delivery conversations grounded in the plan.",
+        "Less guesswork.",
+        "More informed decisions."
+      ],
+      "narration": "For planners, clearer priorities. For production, a shared sequence. For customer-facing teams, delivery conversations grounded in the plan. Less guesswork. More informed decisions.",
+      "audio": "audio/value.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 12.768,
+      "frames": 418,
+      "captions": [
+        {
+          "text": "For planners, clearer priorities.",
+          "startMs": 636,
+          "endMs": 2962,
+          "timestampMs": 1799,
+          "confidence": null
+        },
+        {
+          "text": "For production, a shared sequence.",
+          "startMs": 3235,
+          "endMs": 5524,
+          "timestampMs": 4379,
+          "confidence": null
+        },
+        {
+          "text": "For customer-facing teams,",
+          "startMs": 5809,
+          "endMs": 7628,
+          "timestampMs": 6718,
+          "confidence": null
+        },
+        {
+          "text": "delivery conversations grounded in the plan.",
+          "startMs": 7678,
+          "endMs": 10276,
+          "timestampMs": 8977,
+          "confidence": null
+        },
+        {
+          "text": "Less guesswork.",
+          "startMs": 10500,
+          "endMs": 11440,
+          "timestampMs": 10970,
+          "confidence": null
+        },
+        {
+          "text": "More informed decisions.",
+          "startMs": 11688,
+          "endMs": 13086,
+          "timestampMs": 12387,
+          "confidence": null
+        }
+      ],
+      "from": 3743
+    },
+    {
+      "id": "close",
+      "kind": "close",
+      "label": "The next step",
+      "headline": "Let’s prove it\non your factory data.",
+      "phrases": [
+        "Start with one product family",
+        "and your actual factory data.",
+        "Validate the constraints.",
+        "Review the delivery outcomes.",
+        "Then scale a planning process",
+        "your team can trust."
+      ],
+      "narration": "Start with one product family and your actual factory data. Validate the constraints. Review the delivery outcomes. Then scale a planning process your team can trust.",
+      "audio": "audio/close.wav",
+      "audioOffset": 0.5,
+      "audioDuration": 11.04,
+      "frames": 366,
+      "captions": [
+        {
+          "text": "Start with one product family",
+          "startMs": 599,
+          "endMs": 2406,
+          "timestampMs": 1527,
+          "confidence": null
+        },
+        {
+          "text": "and your actual factory data.",
+          "startMs": 2406,
+          "endMs": 4002,
+          "timestampMs": 3204,
+          "confidence": null
+        },
+        {
+          "text": "Validate the constraints.",
+          "startMs": 4250,
+          "endMs": 6007,
+          "timestampMs": 5128,
+          "confidence": null
+        },
+        {
+          "text": "Review the delivery outcomes.",
+          "startMs": 6218,
+          "endMs": 8073,
+          "timestampMs": 7145,
+          "confidence": null
+        },
+        {
+          "text": "Then scale a planning process",
+          "startMs": 8309,
+          "endMs": 9683,
+          "timestampMs": 9076,
+          "confidence": null
+        },
+        {
+          "text": "your team can trust.",
+          "startMs": 9683,
+          "endMs": 11341,
+          "timestampMs": 10512,
+          "confidence": null
+        }
+      ],
+      "from": 4161
+    }
+  ]
+}

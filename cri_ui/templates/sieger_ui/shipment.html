@@ -1,0 +1,132 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+{% block content_title %}{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}sieger_ui/shipment.css?v=5" />
+{% endblock %}
+
+{% block content %}
+<div class="sieger-cockpit sg-evidence" id="shipment-workspace">
+  <header class="sg-work-header">
+    <div>
+      <a class="sg-work-back" href="{{ request.prefix }}/">&larr; Home</a>
+      <div class="sg-work-title"><h1>Shipment analysis</h1><span>{{ s.name }}{% if s.tag != s.name %} &middot; {{ s.tag }}{% endif %}</span></div>
+    </div>
+    <nav class="sg-work-actions" aria-label="Shipment investigation">
+      <a class="sg-work-button" href="{{ request.prefix }}/production-orders/?dsq={{ s.tag|urlencode:'' }}">Production orders &nearr;</a>
+      <a class="sg-work-button" href="{{ request.prefix }}/build-graph/?dsq={{ s.tag|urlencode }}">Build map &nearr;</a>
+      <a class="sg-work-button" href="{{ request.prefix }}/machine-schedule/?dsq={{ s.tag|urlencode }}">Shipment schedule &nearr;</a>
+    </nav>
+  </header>
+
+  <form class="sg-work-shipment-filter" id="production-shipment-filter" action="{{ request.prefix }}/shipment/" method="get">
+    <label for="production-shipment" class="sg-work-label">Shipment</label>
+    <div><select id="production-shipment" class="sg-work-input" name="dsq">
+      {% for ship in ships %}<option value="{{ ship.tag }}"{% if ship.tag == selected_shipment %} selected{% endif %}>{{ ship.name }} ({{ ship.tag }})</option>{% endfor %}
+    </select><button type="submit" class="sg-work-button sg-no-js">Apply</button></div>
+  </form>
+
+  {% if ships %}
+
+  <section class="sg-work-status is-{{ position.tone }}" aria-labelledby="delivery-verdict">
+    <div class="sg-work-verdict">
+      <span class="sg-work-eyebrow">Delivery position &middot; saved plan</span>
+      <h2 id="delivery-verdict">{% if position.late %}{% if selected_shipment %}Target will be missed{% else %}Some targets will be missed{% endif %}{% elif position.incomplete %}Delivery not yet confirmed{% else %}On track for delivery{% endif %}</h2>
+      <p>{% if position.late %}{{ position.late }} of {{ position.total }} orders miss their due dates.{% elif not position.incomplete %}All {{ position.total }} orders are scheduled in full by their due dates.{% endif %}{% if position.incomplete %} Full shipment delivery is not yet established.{% endif %}</p>
+    </div>
+    <dl class="sg-work-dates">
+      <div><dt>{% if selected_shipment %}Target date{% else %}Earliest target date{% endif %}</dt><dd>{{ s.due|date:"d M Y"|default:"Not recorded" }}<small>{{ s.due|date:"H:i" }} &middot; earliest order due</small></dd></div>
+      <div><dt>Latest scheduled delivery</dt><dd>{{ position.finish|date:"d M Y"|default:"Not scheduled" }}<small>{{ position.finish|date:"H:i" }}{% if position.incomplete %} &middot; partial plan{% endif %}</small></dd></div>
+      <div><dt>Worst order delay</dt><dd>{% if position.late %}{{ position.worst_days|floatformat:1 }} <span>days</span>{% elif position.incomplete %}Not established{% else %}0 <span>days</span>{% endif %}<small>Compared with each order's due date</small></dd></div>
+    </dl>
+  </section>
+
+  <nav class="sg-work-tabs" data-work-tabs aria-label="Shipment sections">
+    <a href="#overview" id="tab-overview">Delivery &amp; delays</a>
+    <a href="#blockers" id="tab-blockers">Evidence <span>{{ blockers|length }}</span></a>
+    <a href="#orders" id="tab-orders">Order coverage <span>{{ position.total }}</span></a>
+    <a href="#plan" id="tab-plan">Production <span>{{ trace_total }}</span></a>
+    <a href="#materials" id="tab-materials">Supply <span>{{ supplies|length }}</span></a>
+  </nav>
+
+  <section id="overview" data-work-panel aria-labelledby="tab-overview">
+    {% include "sieger_ui/shipment_overview.html" %}
+    <a class="sg-work-freshness" href="#plan"><span><b>Plan reference: {{ plan_now|date:"d M Y" }}</b> &middot; Last supply plan: {{ last_supply.finished|date:"d M Y H:i"|default:"Not recorded" }}</span><span>{% if freshness.past_steps %}{{ freshness.past_steps }} past-start steps not recorded complete{% else %}View plan freshness{% endif %} &rarr;</span></a>
+  </section>
+
+  <section id="blockers" data-work-panel aria-labelledby="tab-blockers">
+    <div class="sg-work-section-heading"><div><h2>Blocker evidence</h2><p>Conflict dates, material facts and affected orders, together in one place.</p></div><span class="sg-work-note">{{ blockers|length }} groups &middot; counts can overlap</span></div>
+    {% if blockers %}
+    <div class="sg-work-blocker-layout">
+      <aside class="sg-work-card sg-work-blocker-list" aria-label="Choose a blocker">
+        <label class="sg-work-label" for="blocker-search">Find a material, machine or constraint</label>
+        <input id="blocker-search" class="sg-work-input sg-js-only" type="search" placeholder="Search blockers…" />
+        <div data-blocker-list>{% for b in blockers %}<a href="#{{ b.anchor }}" class="sg-work-blocker-choice" data-blocker-choice="{{ b.anchor }}">
+          <span class="sg-work-label">{{ b.kind|capfirst }}</span>
+          <b>{% if b.material %}{{ b.material.item }}{% else %}{{ b.owner }}{% endif %}</b>
+          <small>{{ b.late }} late &middot; {{ b.unplanned }} unplanned &middot; {{ b.on_time }} on time</small>
+        </a>{% endfor %}</div>
+        <p class="sg-work-empty" data-blocker-empty hidden>No matching blockers. Try a different search.</p>
+        <div data-blocker-pager></div>
+      </aside>
+      <div class="sg-work-blocker-detail"><p class="sg-work-card sg-work-empty" data-blocker-detail-empty hidden>No matching evidence. Try another material or machine.</p>{% for b in blockers %}{% include "sieger_ui/shipment_blocker.html" %}{% endfor %}</div>
+    </div>
+    <p class="sg-work-note">Recorded conflicts describe what the solver encountered. They do not prove the final cause of delay; some affected orders were ultimately planned on time.</p>
+    {% else %}<div class="sg-work-card sg-work-empty"><h3>No recorded blockers</h3><p>No constraint records are saved for this shipment.{% if position.late or position.incomplete %} The underlying cause is not established.{% endif %}</p><a class="sg-work-button" href="#orders">Inspect orders &rarr;</a></div>{% endif %}
+  </section>
+
+  <section id="orders" data-work-panel aria-labelledby="tab-orders">
+    <div class="sg-work-metrics">
+      <a href="#orders-ontime" class="sg-work-metric is-ok"><span>Scheduled on time</span><strong>{{ position.on_time }}</strong><small>View orders &rarr;</small></a>
+      <a href="#orders-late" class="sg-work-metric is-late"><span>Scheduled late</span><strong>{{ position.late }}</strong><small>View late orders &rarr;</small></a>
+      <a href="#orders-unplanned" class="sg-work-metric is-bad"><span>Without a finish date</span><strong>{{ position.unplanned }}</strong><small>Review unplanned &rarr;</small></a>
+      <a href="#orders-incomplete" class="sg-work-metric"><span>Incomplete records</span><strong>{{ uncertain_orders|length }}</strong><small>Quantity / due-date gaps &rarr;</small></a>
+    </div>
+    <div class="sg-work-section-heading"><div><h2>{% if selected_shipment %}Shipment orders{% else %}All production orders{% endif %}</h2><p>Filter the work you need to investigate, then open its evidence.</p></div><span class="sg-work-note">{{ position.total }} orders in the saved plan</span></div>
+    <div class="sg-work-card">
+      <div class="sg-work-order-tools sg-js-only">
+        <div><label for="order-filter" class="sg-work-label">Show orders</label><select id="order-filter" class="sg-work-input"><option value="attention">Needs attention</option><option value="all">All orders ({{ position.total }})</option><option value="late">Scheduled late ({{ position.late }})</option><option value="unplanned">Unplanned ({{ position.unplanned }})</option><option value="incomplete">Incomplete records ({{ uncertain_orders|length }})</option><option value="ontime">Scheduled on time ({{ position.on_time }})</option></select></div>
+        <div class="sg-work-search"><label for="order-search" class="sg-work-label">Find an order or part</label><input id="order-search" type="search" class="sg-work-input" placeholder="Order number, part or blocker…" /></div>
+      </div>
+      {% include "sieger_ui/shipment_orders.html" %}
+      <p class="sg-work-note">On-time and late counts compare scheduled dates. Incomplete quantities are flagged separately and can overlap either group.</p>
+    </div>
+  </section>
+
+  <section id="plan" data-work-panel aria-labelledby="tab-plan">
+    <div class="sg-work-section-heading"><div><h2>Production &amp; progress</h2><p>All production steps linked to this shipment, including shared work.</p></div><span class="sg-work-note">{{ progress.complete }} / {{ progress.total }} recorded complete &middot; {{ progress.overdue }} past-finish unfinished</span></div>
+    <div class="sg-work-grid">
+      <section class="sg-work-card" aria-labelledby="freshness-title">
+        <h2 id="freshness-title">How current is this answer?</h2>
+        <dl class="sg-work-facts"><div><dt>Plan reference date</dt><dd>{{ plan_now|date:"d M Y H:i" }}</dd></div><div><dt>Last successful supply plan</dt><dd>{{ last_supply.finished|date:"d M Y H:i"|default:"Not recorded" }}</dd></div><div><dt>Progress checked at</dt><dd>{{ checked_at|date:"d M Y H:i" }}</dd></div></dl>
+        <p>{% if freshness.past_steps %}<b>{{ freshness.past_steps }} of {{ freshness.linked_steps }} linked steps</b> have a past planned start and are not recorded as completed/closed. Some may be in progress; check actual progress.{% else %}No linked steps with a past planned start remain recorded as unfinished.{% endif %}</p>
+        <details><summary>How to interpret these checks</summary><p class="sg-work-note">Dates describe the saved plan, not confirmed factory progress. Each order is compared with its own due date. Dates use the application's display timezone. Loading a saved plan is excluded from the planning timestamp; later data edits may not have been replanned.</p></details>
+      </section>
+      <section class="sg-work-card">
+        <h2>Scheduled time by machine group</h2><p class="sg-work-note">All linked groups, ranked by elapsed hours including calendar gaps. Shared steps count once per group; this is not utilization.</p>
+        <div data-page-table data-page-size="5">
+          <div class="sg-evidence-scroll" role="region" aria-label="Scheduled time by machine group" tabindex="0"><table class="sg-ship-tb"><thead><tr><th scope="col">Machine group</th><th scope="col" class="n">Steps</th><th scope="col" class="n">Hours</th></tr></thead><tbody>{% for g in groups %}<tr data-page-row><td>{{ g.descr|default:g.grp }}<small>{{ g.grp }}</small></td><td class="n">{{ g.ops }}</td><td class="n">{{ g.hours|floatformat:1 }}</td></tr>{% endfor %}</tbody></table></div>
+          <p class="sg-work-empty" data-page-empty{% if groups %} hidden{% endif %}>No scheduled machine time is recorded.</p><div data-page-controls></div>
+        </div>
+      </section>
+    </div>
+    <section class="sg-work-card sg-work-trace" id="plan-trace">
+      <div class="sg-work-card-heading"><h2>Shipment production steps</h2><a class="sg-work-button" href="{{ request.prefix }}/build-graph/?dsq={{ s.tag|urlencode:'' }}">Dependency map &nearr;</a></div>
+      <p class="sg-work-note">{{ trace_total }} linked steps, latest finish first. Dates are planned; status is recorded progress.</p>
+      <div data-page-table data-page-size="5" data-search-table>
+        <label class="sg-work-label sg-js-only" for="step-search">Find a step, part, machine or status</label><input id="step-search" data-table-search type="search" class="sg-work-input sg-js-only" placeholder="Search production steps…" />
+        <div class="sg-evidence-scroll" role="region" aria-label="Shipment production steps" tabindex="0"><table class="sg-ship-tb"><thead><tr><th scope="col">Step / part</th><th scope="col">Machine</th><th scope="col">Planned start</th><th scope="col">Planned finish</th><th scope="col">Status</th></tr></thead><tbody>{% for step in trace_steps %}<tr data-page-row><td><a href="{{ step.url }}">{{ step.operation_id }}</a><small>{{ step.reference }} &middot; {{ step.description|default:step.item_id }}</small></td><td>{{ step.machines|default:"No machine recorded" }}</td><td>{{ step.startdate|date:"d M Y H:i"|default:"Not scheduled" }}</td><td>{{ step.enddate|date:"d M Y H:i"|default:"Not scheduled" }}</td><td>{{ step.status|default:"Not recorded" }}{% if step.overdue %}<small class="sg-work-text-bad">Past finish, not complete</small>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+        <p class="sg-work-empty" data-page-empty{% if trace_steps %} hidden{% endif %}>No matching production steps. Clear the search or check the saved plan.</p><div data-page-controls></div>
+      </div>
+    </section>
+  </section>
+  <section id="materials" data-work-panel aria-labelledby="tab-materials">
+    {% include "sieger_ui/shipment_supply.html" %}
+  </section>
+  <noscript><p class="sg-work-note">Enable JavaScript for tabs, search and pagination. All shipment evidence is shown below its section heading.</p></noscript>
+  {% else %}
+  <section class="sg-work-card sg-work-empty"><h2>No production orders to display</h2><p>There are no open or quote orders in this scenario.</p></section>
+  {% endif %}
+</div>
+<script src="{{ STATIC_URL }}sieger_ui/shipment.js?v=4"></script>
+{% endblock %}

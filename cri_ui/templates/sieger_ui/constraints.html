@@ -1,0 +1,334 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+The Constraints screen.
+
+Written for a planner, not an engineer: no jargon, no file paths, and the
+counter-intuitive part of TOC said out loud - the other machines are
+SUPPOSED to get quieter. People read a drop in utilisation as a fault
+unless you tell them first.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-rp" id="sg-toc"
+     data-save-url="{{request.prefix}}/constraints/save/"
+     data-run-url="{{request.prefix}}/constraints/run/"
+     data-status-url="{{request.prefix}}/constraints/status/">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Constraints</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan</span>
+      <span class="sieger-v">{{request.database|default:"production"}}</span>
+    </div>
+  </header>
+
+  <p class="sieger-lede">
+    Every factory has one step that sets how much gets out of the door. Tell
+    the system which one yours is, and it will build the schedule around it
+    instead of guessing.
+  </p>
+
+  <div class="sieger-grid">
+    <div>
+
+      {# ------------------------------------------------------ the form #}
+      <div class="sieger-card sg-toc-form">
+        <p class="sieger-card-t">Your constraint</p>
+
+        <label class="sg-toc-lbl" for="toc-drum">
+          Which machines or work centres limit your output?
+        </label>
+        {% comment %}Kept as a text field as well as the checkboxes: it is
+        what actually gets posted, it shows the whole selection at a glance,
+        and it still accepts a name typed by hand.{% endcomment %}
+        <input class="form-control" id="toc-drum" list="toc-list"
+               value="{{drum}}" placeholder="Enter your work-centre names"
+               autocomplete="off">
+        <datalist id="toc-list">
+          {% for c in candidates %}<option value="{{c.grp}}">{{c.descr}}</option>{% endfor %}
+        </datalist>
+        <p class="sg-toc-hint">
+          Tick them in the table below, or type names separated by commas.
+        </p>
+        {% if members %}
+        <p class="sg-toc-hint">
+          {{members|length}} machine{{members|length|pluralize}} in total:
+          {% for m in members %}<code>{{m}}</code>{% if not forloop.last %} {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+
+        {% if overlap %}
+        <p class="sg-toc-warn" id="toc-overlap">
+          <b>These constraints share work.</b> Each one re-lays its own jobs
+          and freezes them, so a job on two of them would be frozen twice by
+          two passes that never saw each other &mdash; which can pin a later
+          step before an earlier one finishes. Run will refuse until you drop
+          one.
+          {% for o in overlap %}<br>job <code>{{o.mo}}</code> passes through
+          {{o.drums}}{% endfor %}
+        </p>
+        {% endif %}
+      </div>
+
+      {# ------------------------------------------------- last result #}
+      {% if last %}
+      <div class="sieger-card sg-toc-last">
+        <p class="sieger-card-t">Last run &middot; {{last.at}}</p>
+        <div class="sieger-stats">
+          <span class="sieger-stat"><b>{{last.placed}}</b> jobs placed on {{last.drum}}</span>
+          {% if last.starved %}
+          <span class="sieger-stat sieger-stat-warn"><b>{{last.starved}}</b> waiting on upstream</span>
+          {% endif %}
+          {% if last.unplaced %}
+          <span class="sieger-stat sieger-stat-bad"><b>{{last.unplaced}}</b> did not fit</span>
+          {% endif %}
+        </div>
+        {% if last.unplaced %}
+        <p class="sieger-card-f">
+          Jobs that did not fit mean more work is aimed at this step than it
+          can do in the period. That is not an error &mdash; it is the answer.
+        </p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# -------------------------------------------------- candidates #}
+      {% if candidates %}
+      {% comment %}The table scrolls inside its own box so Save and Run stay
+      on screen. The list grows with the number of work centres, and a
+      planner should never have to scroll past 30 rows to reach the button
+      that acts on them.{% endcomment %}
+      <div class="sg-rp-tblwrap sg-toc-scroll">
+        <table class="sg-rp-tbl sg-toc-tbl">
+          <thead>
+            <tr>
+              <th class="sg-toc-pick">use</th>
+              <th>work centre</th>
+              <th class="num">pieces/day</th>
+              <th class="num">machines</th>
+              <th class="num">hours available</th>
+              <th class="num">hours used</th>
+              <th class="num">busy</th>
+              <th>over capacity</th>
+              <th>what it is</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in candidates %}
+            <tr{% if c.chosen %} class="sg-toc-is-drum"{% endif %}>
+              <td class="sg-toc-pick">
+                <input type="checkbox" class="toc-pick" value="{{c.grp}}"
+                       {% if c.chosen %}checked{% endif %}
+                       aria-label="use {{c.grp}} as a constraint">
+              </td>
+              <td class="mono">{{c.grp}}{% if c.chosen %}
+                <span class="sieger-stat sieger-stat-bad">constraint</span>{% endif %}</td>
+              <td class="num">
+                {% comment %}Each drum has its own rate - one shared field
+                could not describe three different machines.{% endcomment %}
+                <input class="sg-toc-rate" data-grp="{{c.grp}}"
+                       value="{{c.rate}}" placeholder="&mdash;"
+                       inputmode="decimal"
+                       aria-label="pieces per day for {{c.grp}}">
+              </td>
+              <td class="num">{{c.machines}}</td>
+              <td class="num">{{c.available_h}}</td>
+              <td class="num">{{c.busy_h}}</td>
+              <td class="num">{{c.used_pct|floatformat:1}}%</td>
+              <td>{% if c.over %}<span class="sieger-stat sieger-stat-bad">needs {{c.over}}&times; capacity</span>{% endif %}</td>
+              <td>{{c.descr}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# The actions sit under the table they act on, always reachable. #}
+      <div class="sg-toc-actions sg-toc-actions-main">
+        <button class="sieger-btn" id="toc-save">Save</button>
+        <button class="sieger-btn sieger-btn-go" id="toc-run"
+                {% if running %}disabled{% endif %}>
+          {% if running %}Planning&hellip;{% else %}Run the plan{% endif %}
+        </button>
+        <span class="sg-toc-msg" id="toc-msg"></span>
+      </div>
+      <p class="sg-rp-note">
+        Leave pieces/day blank and that constraint is paced by its working
+        hours instead. Fill it in and that number becomes the beat the rest
+        of the factory works to.
+      </p>
+      <p class="sg-rp-note">
+        Busiest first, from the current plan. This is a suggestion, not an
+        answer &mdash; you know the floor. If the top of this list is not what
+        you would have said, that disagreement is worth chasing down.
+      </p>
+      <p class="sg-rp-note">
+        <b>&ldquo;Over capacity&rdquo; is not a utilisation.</b> A machine
+        cannot be more than 100% busy. Where you see <em>needs 3&times;
+        capacity</em>, the plan has been told to put three times more work
+        through that step than it physically has hours for &mdash; because the
+        due dates demand it. It is not what will happen on the floor; it is
+        the size of the gap between what has been promised and what exists.
+      </p>
+      {% else %}
+      <p class="sg-rp-note">Add C.R.I Pumps machines and run a supply plan to review capacity constraints here. <a href="{{ request.prefix }}/data/input/resource/">Set up machines &rarr;</a></p>
+      {% endif %}
+
+    </div>
+
+    {# -------------------------------------------------------- aside #}
+    <aside class="sieger-side">
+      <div class="sieger-card">
+        <p class="sieger-card-t">What happens when you press Run</p>
+        <ol class="sg-toc-steps">
+          <li><b>Your constraint is filled first.</b> Solid, no gaps. An hour
+            lost there is an hour the whole factory never gets back.</li>
+          <li><b>Parts are timed to arrive just before it needs them.</b> Not
+            earlier, or stock piles up in front of it.</li>
+          <li><b>Everything else is arranged around that.</b></li>
+        </ol>
+      </div>
+
+      <div class="sieger-card sieger-card-note">
+        <p><strong>The other machines will look quieter. That is correct.</strong></p>
+        <p>
+          A laser sitting idle for a day is not waste. Running it flat out
+          just to look busy makes parts nobody needs yet, and they sit as
+          stock.
+        </p>
+        <p>
+          If <em>everything</em> got busier after a run, something is wrong
+          &mdash; tell us.
+        </p>
+      </div>
+
+      <div class="sieger-card">
+        <p class="sieger-card-t">Then what</p>
+        <p class="sieger-card-f">
+          Open the <a href="{{request.prefix}}/machine-schedule/">plan board</a>
+          and find your constraint. Its row should be one solid bar. The
+          delivery dates on
+          <a href="{{request.prefix}}/data/input/demand/">work orders</a> are
+          now built from that schedule.
+        </p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById("sg-toc");
+  if (!root) return;
+  var msg = document.getElementById("toc-msg");
+  // An empty company has no candidate table or action buttons yet.
+  if (!msg) return;
+
+  function token() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : "";
+  }
+  function post(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: {"X-CSRFToken": token(),
+                "Content-Type": "application/x-www-form-urlencoded"},
+      body: body || ""
+    }).then(function (r) { return r.json().then(function (j) {
+      return {ok: r.ok, data: j}; }); });
+  }
+  function say(text, bad) {
+    msg.textContent = text;
+    msg.className = "sg-toc-msg" + (bad ? " is-bad" : " is-ok");
+  }
+
+  var box = document.getElementById("toc-drum");
+
+  // The text field is the single source of truth - it is what gets posted.
+  // Ticking a row writes into it; typing into it re-ticks the rows. Rates
+  // are posted in the SAME ORDER as the drums, because the server pairs
+  // them by position.
+  function chosen() {
+    return box.value.split(",").map(function (s) { return s.trim(); })
+              .filter(Boolean);
+  }
+  function rateFor(grp) {
+    var i = root.querySelector('.sg-toc-rate[data-grp="' + grp + '"]');
+    return i ? i.value.trim() : "";
+  }
+  function syncTicks() {
+    var on = chosen();
+    Array.prototype.forEach.call(root.querySelectorAll(".toc-pick"),
+      function (cb) {
+        cb.checked = on.indexOf(cb.value) >= 0;
+        var tr = cb.closest("tr");
+        if (tr) tr.classList.toggle("sg-toc-is-drum", cb.checked);
+      });
+  }
+
+  Array.prototype.forEach.call(root.querySelectorAll(".toc-pick"),
+    function (cb) {
+      cb.addEventListener("change", function () {
+        var on = chosen();
+        var i = on.indexOf(cb.value);
+        if (cb.checked && i < 0) on.push(cb.value);
+        if (!cb.checked && i >= 0) on.splice(i, 1);
+        box.value = on.join(", ");
+        syncTicks();
+      });
+    });
+  box.addEventListener("input", syncTicks);
+  syncTicks();
+
+  function fields() {
+    var on = chosen();
+    return "drum=" + encodeURIComponent(on.join(","))
+         + "&rate=" + encodeURIComponent(on.map(rateFor).join(","));
+  }
+
+  document.getElementById("toc-save").addEventListener("click", function () {
+    say("Saving…");
+    post(root.dataset.saveUrl, fields()).then(function (r) {
+      if (!r.ok) return say(r.data.error || "Could not save.", true);
+      // A save that stores a clashing pair is still a save - but say so.
+      say(r.data.warning ? "Saved. " + r.data.warning : "Saved.",
+          !!r.data.warning);
+    });
+  });
+
+  var runBtn = document.getElementById("toc-run");
+  runBtn.addEventListener("click", function () {
+    runBtn.disabled = true;
+    say("Saving, then planning…");
+    // Save first: pressing Run with an edited but unsaved box should plan
+    // what is on screen, not what was there before.
+    post(root.dataset.saveUrl, fields()).then(function (s) {
+      if (!s.ok) { runBtn.disabled = false; return say(s.data.error, true); }
+      return post(root.dataset.runUrl).then(function (r) {
+        if (!r.ok) { runBtn.disabled = false; return say(r.data.error, true); }
+        var n = (r.data.drums || []).length;
+        say((n > 1 ? n + " constraints packed — " : "Constraint packed — ")
+            + r.data.placed + " jobs. Planning…");
+        poll();
+      });
+    });
+  });
+
+  function poll() {
+    fetch(root.dataset.statusUrl).then(function (r) { return r.json(); })
+      .then(function (s) {
+        if (s.done) { say("Plan finished. Reloading…"); location.reload(); }
+        else { say("Planning… " + (s.status || "")); setTimeout(poll, 4000); }
+      });
+  }
+  {% if running %}poll();{% endif %}
+})();
+</script>
+{% endblock %}

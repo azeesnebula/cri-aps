@@ -1,0 +1,537 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+"What to do next".
+
+Written for a planner, not an engineer. Two rules shape the wording:
+
+  * Shipment first, job second. The per-job figure always reads healthier
+    than the delivery position, and quoting it is how people end up
+    believing a plan is fine when nothing is arriving on time.
+
+  * Say how sure each number is, every time. A capacity division and a
+    measured result are different promises, and a screen that blurs them
+    will eventually be believed about something it never checked. A third
+    tier - a predicted day saving - was built and removed for being wrong
+    by a factor of five; improve.py records why.
+
+Styling is a scoped <style> block on purpose. Touching sieger.css would
+mean bumping ?v= in base_site.html or browsers keep the old file - and
+this screen needs no change to any other.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<style>
+  .sg-imp-cards { display: grid; gap: 10px; margin: 14px 0 22px; }
+  .sg-imp-card { border: 1px solid var(--sg-rule, #d4dadd); border-left-width: 3px;
+                 border-radius: 6px; padding: 12px 14px; background: var(--sg-surface, #fff); }
+  .sg-imp-card.k-fact { border-left-color: #2e6b4f; }
+  .sg-imp-card.k-question { border-left-color: #a8720c; }
+  .sg-imp-card.k-arithmetic { border-left-color: #0f6e80; }
+  .sg-imp-card.k-error { border-left-color: #a63a32; }
+  .sg-imp-top { display: flex; justify-content: space-between; gap: 14px;
+                align-items: baseline; flex-wrap: wrap; }
+  .sg-imp-title { font-weight: 600; font-size: 1.02rem; margin: 0; }
+  .sg-imp-kind { font-size: .68rem; letter-spacing: .07em; text-transform: uppercase;
+                 color: var(--sg-muted, #6b7a80); white-space: nowrap; }
+  .sg-imp-detail { margin: 7px 0 0; line-height: 1.5; color: var(--sg-ink-2, #3b474d); }
+  .sg-imp-nums { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;
+                 font-size: .82rem; }
+  .sg-imp-nums b { font-variant-numeric: tabular-nums; }
+  .sg-imp-act { margin-top: 10px; display: flex; gap: 8px; align-items: center;
+                flex-wrap: wrap; }
+  .sg-imp-badge { font-size: .68rem; padding: 2px 7px; border-radius: 3px;
+                  background: rgba(46,107,79,.12); color: #2e6b4f; }
+  .sg-imp-badge.is-est { background: rgba(15,110,128,.1); color: #0f6e80; }
+  .sg-imp-stand { display: flex; gap: 26px; flex-wrap: wrap; margin: 6px 0 4px; }
+  .sg-imp-stand div { min-width: 92px; }
+  .sg-imp-stand .n { font-size: 1.6rem; font-weight: 600; line-height: 1.1;
+                     font-variant-numeric: tabular-nums; }
+  .sg-imp-stand .l { font-size: .74rem; color: var(--sg-muted, #6b7a80); }
+  .sg-imp-bad .n { color: #a63a32; }
+  table.sg-imp-t { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  table.sg-imp-t th { text-align: left; font-size: .7rem; letter-spacing: .06em;
+                      text-transform: uppercase; color: var(--sg-muted, #6b7a80);
+                      border-bottom: 1px solid var(--sg-rule, #d4dadd); padding: 5px 8px; }
+  table.sg-imp-t td { padding: 5px 8px; border-bottom: 1px solid var(--sg-rule-soft, #e6eaeb); }
+  table.sg-imp-t td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .sg-imp-note { font-size: .82rem; color: var(--sg-muted, #6b7a80); margin: 10px 0; }
+  .sg-imp-msg { margin: 10px 0; font-size: .86rem; min-height: 1.2em; }
+  .sg-imp-msg.is-bad { color: #a63a32; }
+  .sg-imp-back { margin: 6px 0 0; font-size: .8rem; color: #a8720c; }
+  .sg-imp-aside { margin: 18px 0; font-size: .86rem; }
+  .sg-imp-aside summary { cursor: pointer; color: var(--sg-muted, #6b7a80); }
+  .sg-imp-asidecard { display: flex; gap: 12px; align-items: center;
+                      flex-wrap: wrap; padding: 6px 0;
+                      border-bottom: 1px solid var(--sg-rule-soft, #e6eaeb); }
+  .sg-imp-asidecard > span:first-child { flex: 1; min-width: 220px; }
+
+  /* Start-date control, on late-shipment cards only. */
+  .sg-imp-start { margin: .6rem 0 .2rem; padding-top: .55rem;
+                  border-top: 1px solid var(--sg-rule-soft); }
+  .sg-imp-start-row { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+  .sg-imp-start-k { font-family: var(--sg-mono); font-size: .6rem;
+                    letter-spacing: .1em; text-transform: uppercase; opacity: .55; }
+  .sg-imp-start-row b { font-family: var(--sg-mono); font-size: .8rem; }
+  .sg-imp-date, .sg-imp-ship {
+                 padding: .25rem .4rem; font-family: var(--sg-mono);
+                 font-size: .76rem; color: inherit; background: var(--sg-surface-2);
+                 border: 1px solid var(--sg-rule); border-radius: 2px; }
+  .sg-imp-ship { max-width: 22rem; }
+  .sg-imp-start-out { margin: .5rem 0 0; font-size: .78rem; line-height: 1.45; }
+  .sg-imp-start-out.is-bad { color: var(--sg-bad); }
+  .sg-imp-start-out.is-work { opacity: .7; font-family: var(--sg-mono);
+                              font-size: .72rem; }
+  .sg-imp-start-out b { font-family: var(--sg-mono); }
+</style>
+
+<div class="sg-rp" id="sg-imp"
+     data-dismiss-url="{{request.prefix}}/improve/dismiss/"
+     data-prove-url="{{request.prefix}}/improve/prove/"
+     data-status-url="{{request.prefix}}/improve/status/">
+
+  <header class="sieger-hd">
+    <div>
+      <h1 class="sieger-h1">What to do next</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan</span>
+      <span class="sieger-v">{{request.database|default:"production"}}</span>
+    </div>
+  </header>
+
+  {% if not has_plan %}
+    <p class="sieger-lede">
+      There is no plan to read yet. Generate a plan, then come back and this
+      page will tell you what is holding it up and what would help.
+    </p>
+  {% else %}
+
+  <p class="sieger-lede">
+    Read from the plan as it stands right now. Everything below is worked out
+    from this plan's own numbers &mdash; nothing is carried over from anywhere
+    else.
+  </p>
+
+  <!-- ---------------------------------------------------------- standing -->
+  <h2>Where you stand</h2>
+  <div class="sg-imp-stand">
+    <div class="{% if standing.late %}sg-imp-bad{% endif %}">
+      <div class="n">{{standing.late}}<span style="font-size:.9rem"> / {{standing.shipments}}</span></div>
+      <div class="l">{% if standing.grouped %}shipments late{% else %}orders late{% endif %}</div>
+    </div>
+    <div>
+      <div class="n">{{standing.avg_delay}}</div>
+      <div class="l">days late, average</div>
+    </div>
+    <div>
+      <div class="n">{{standing.worst_delay}}</div>
+      <div class="l">days, worst</div>
+    </div>
+    {% if standing.unplanned %}
+    <div>
+      <div class="n">{{standing.unplanned}}</div>
+      <div class="l">could not be planned</div>
+    </div>
+    {% endif %}
+    <div>
+      <div class="n" style="font-size:1.1rem;padding-top:.5rem">{{standing.completes|date:"d M Y"}}</div>
+      <div class="l">plan completes</div>
+    </div>
+  </div>
+
+  {% if standing.grouped %}
+    <p class="sg-imp-note">
+      A shipment goes when its <em>last</em> job is done, so it is only ever as
+      good as its worst part. That is why this count is harsher than the
+      per-order figure on the other screens &mdash; and it is the one that
+      matches what the customer sees.
+    </p>
+  {% else %}
+    <p class="sg-imp-note">
+      This plan carries no delivery-sequence tag, so every order is counted as
+      its own shipment. Tagging orders with the sequence they belong to would
+      make this a true delivery view.
+    </p>
+  {% endif %}
+
+  <!-- ------------------------------------------------------- constraints -->
+  <h2>What is holding it up</h2>
+  {% if constraints %}
+    <p class="sg-imp-note">
+      Ranked by how many late shipments each one touches, not by how overloaded
+      it is &mdash; the busiest resource and the most damaging one are often
+      not the same. Over {{facts.over_pct|floatformat:0}}% means more work is
+      booked than there are hours to do it.
+    </p>
+    <table class="sg-imp-t">
+      <thead>
+        <tr>
+          <th>Resource</th><th>What it is</th>
+          <th class="n">Machines</th><th class="n">Needs</th>
+          <th class="n">Available</th><th class="n">Load</th>
+          <th class="n">Late shipments</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in constraints %}
+        <tr>
+          <td><b>{{c.name}}</b></td>
+          <td>{{c.description|default:"&mdash;"}}</td>
+          <td class="n">{{c.machines}}</td>
+          <td class="n">{{c.needs|floatformat:0}} h</td>
+          <td class="n">{{c.avail|floatformat:0}} h</td>
+          <td class="n"><b>{{c.load|floatformat:0}}%</b></td>
+          <td class="n">{{c.late_shipments}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="sg-imp-note">
+      No resource is over {{facts.over_pct|floatformat:0}}% of its capacity in
+      this window. Whatever is making orders late, it is not machine hours
+      &mdash; look at material availability and the promised dates themselves.
+    </p>
+  {% endif %}
+
+  <!-- ------------------------------------------------------- suggestions -->
+  <h2>What would help</h2>
+  <div class="sg-imp-msg" id="imp-msg"></div>
+
+  {% if suggestions %}
+  <div class="sg-imp-cards">
+    {% for s in suggestions %}
+    <div class="sg-imp-card k-{{s.certainty}}" data-key="{{s.key}}">
+      <div class="sg-imp-top">
+        <p class="sg-imp-title">{{s.title}}</p>
+        <span class="sg-imp-kind">{{s.kind}}</span>
+      </div>
+      {% if s.resurfaced %}
+        <p class="sg-imp-back">Back on the list &mdash; you set this aside on
+          {{s.set_aside.at}} when it was at {{s.set_aside.load|floatformat:0}}%,
+          and it has got worse since.</p>
+      {% endif %}
+      <p class="sg-imp-detail">{{s.detail}}</p>
+
+      <div class="sg-imp-nums">
+        {% if s.load_after is not None %}
+          <span>load <b>{{s.load_before|floatformat:0}}%</b> &rarr;
+                <b>{{s.load_after|floatformat:0}}%</b></span>
+        {% endif %}
+        {% if s.shipments %}
+          <span>touches <b>{{s.shipments}}</b> late shipment{{s.shipments|pluralize}}</span>
+        {% endif %}
+        {% if s.measured %}
+          <span class="sg-imp-badge">measured: {{s.measured.days}} days
+                recovered</span>
+        {% endif %}
+      </div>
+
+      {% comment %}
+      Start-date card. Only suggestions carrying a shipment tag get the
+      date control; every other suggestion is unchanged.
+
+      The date is bounded below by the PLAN's current date, not the
+      browser's - you cannot start manufacturing in the past, and the plan
+      date is pinned for reproducible runs so the two differ.
+      {% endcomment %}
+      {% comment %}
+      One card for every late shipment, not one card each: 34 of those
+      buried the plant-wide advice and repeated the same date 34 times.
+      The per-shipment figures live on the Delivery sequences screen.
+
+      Each option carries its own dates and its own stored measurement, so
+      switching shipment is instant and needs no request.
+
+      The date is bounded below by the PLAN's current date, not the
+      browser's - you cannot start manufacturing in the past, and the plan
+      date is pinned for reproducible runs so the two differ.
+      {% endcomment %}
+      {% if s.ships %}
+      <div class="sg-imp-start" data-key="{{s.key}}">
+        <div class="sg-imp-start-row">
+          <span class="sg-imp-start-k">shipment</span>
+          <select class="sg-imp-ship" aria-label="late shipment to test">
+            {% for sh in s.ships %}
+            <option value="{{sh.tag}}"
+                    data-start="{{sh.start|date:'d M Y'|default:'—'}}"
+                    data-start-iso="{{sh.start|date:'Y-m-d'}}"
+                    data-measured="{{sh.measured_text}}">{{sh.tag}} &middot;
+              {{sh.delay|floatformat:1}} d late &middot;
+              {{sh.orders}} order{{sh.orders|pluralize}}</option>
+            {% endfor %}
+          </select>
+          <span class="sg-imp-start-k">starts now</span>
+          <b class="sg-imp-startnow">{{s.ships.0.start|date:"d M Y"|default:"&mdash;"}}</b>
+          <span class="sg-imp-start-k">start instead on</span>
+          {% comment %}Deliberately EMPTY. Pre-filling it with the current
+          start made the box open on the one date that cannot change
+          anything, and pressing Measure then spent a five-minute solve and
+          a scenario slot to report "no change".{% endcomment %}
+          <input type="date" class="sg-imp-date" value=""
+                 min="{{s.ship_min_start|date:'Y-m-d'}}"
+                 aria-label="new start date">
+          <button type="button" class="imp-measure sieger-btn sieger-btn-go">Measure</button>
+        </div>
+        {% comment %}A measurement already taken against THIS plan, restated
+        so it survives a reload. The javascript overwrites it in place when a
+        fresh measurement finishes, and swaps it when the shipment changes.
+        {% endcomment %}
+        <p class="sg-imp-start-out"{% if not s.ships.0.measured_text %} hidden{% endif %}>{{s.ships.0.measured_text}}</p>
+      </div>
+      {% endif %}
+
+      <div class="sg-imp-act">
+        <button type="button" class="imp-dismiss" data-key="{{s.key}}">Set aside</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="sg-imp-note">
+    <b>How sure each number is.</b> A <em>load</em> figure is arithmetic
+    &mdash; hours needed against hours available &mdash; and it is exact. It
+    tells you whether a resource can physically do the work asked of it, and
+    nothing about delivery dates. Nothing here predicts how many days a change
+    would save, because a prediction worth acting on has to account for the
+    whole plant and the parts list, and this screen cannot. Measuring a
+    change for real means running it against a copy of this plan, which is
+    the next thing to build here &mdash; until then, the way to test one of
+    these is to make the change in a scenario and compare.
+  </p>
+  {% else %}
+    <p class="sg-imp-note">
+      Nothing to suggest from this plan. Either it is comfortable, or the delay
+      is coming from something this screen does not yet look at &mdash;
+      material availability and promised dates are the usual candidates.
+    </p>
+  {% endif %}
+
+  {% if set_aside %}
+  <details class="sg-imp-aside">
+    <summary>{{set_aside|length}} suggestion{{set_aside|pluralize}} set aside</summary>
+    <p class="sg-imp-note">
+      Hidden because someone judged them already. They come back on their own
+      if the situation gets materially worse than it was at the time.
+    </p>
+    {% for s in set_aside %}
+      <div class="sg-imp-asidecard">
+        <span>{{s.title}}</span>
+        <span class="sg-imp-kind">
+          {% if s.set_aside.at %}set aside {{s.set_aside.at}}{% endif %}
+          {% if s.set_aside.load %}&middot; was {{s.set_aside.load|floatformat:0}}%{% endif %}
+          {% if s.load_before %}&middot; now {{s.load_before|floatformat:0}}%{% endif %}
+        </span>
+        <button type="button" class="imp-dismiss" data-key="{{s.key}}">Bring back</button>
+      </div>
+    {% endfor %}
+  </details>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById("sg-imp");
+  if (!root) return;
+  var msg = document.getElementById("imp-msg");
+
+  function token() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : "";
+  }
+  function post(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: {"X-CSRFToken": token(),
+                "Content-Type": "application/x-www-form-urlencoded"},
+      body: body || ""
+    }).then(function (r) {
+      return r.json().then(function (j) { return {ok: r.ok, data: j}; });
+    });
+  }
+  function say(text, bad) {
+    msg.textContent = text || "";
+    msg.className = "sg-imp-msg" + (bad ? " is-bad" : "");
+  }
+
+  Array.prototype.forEach.call(
+    root.querySelectorAll(".imp-dismiss"), function (btn) {
+      btn.addEventListener("click", function () {
+        post(root.dataset.dismissUrl, "key=" + encodeURIComponent(btn.dataset.key))
+          .then(function () { location.reload(); });
+      });
+    });
+
+  function poll() {
+    fetch(root.dataset.statusUrl).then(function (r) { return r.json(); })
+      .then(function (s) {
+        if (s.done) { say("Plan finished. Reloading…"); location.reload(); }
+        else { say("Planning… " + (s.status || "")); setTimeout(poll, 4000); }
+      });
+  }
+  {% if running %}poll();{% endif %}
+
+  // ------------------------------------------------------------------
+  // Measuring a start date.
+  //
+  // A copy and a replan take minutes, so the server runs it as a state
+  // machine and every poll advances it one step. The card narrates the
+  // phase rather than sitting silent, because a button that appears to do
+  // nothing for four minutes gets pressed again.
+  // ------------------------------------------------------------------
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function day(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined,
+      {day: "2-digit", month: "short", year: "numeric"});
+  }
+
+  function render(out, r) {
+    var late = r.late_days;
+    var verdict;
+    if (late === null || late === undefined) verdict = "";
+    else if (late > 0.05) verdict = "<b>" + late.toFixed(1) + " days late</b>";
+    else if (late < -0.05) verdict = "<b>" + Math.abs(late).toFixed(1) +
+                                     " days early</b>";
+    else verdict = "<b>on the due date</b>";
+
+    var moved = "";
+    if (r.gained_days !== null && r.gained_days !== undefined) {
+      if (r.gained_days > 0.05) {
+        moved = " That is <b>" + r.gained_days.toFixed(1) +
+                " days sooner</b> than the current plan.";
+      } else if (r.gained_days < -0.05) {
+        moved = " That is <b>" + Math.abs(r.gained_days).toFixed(1) +
+                " days later</b> than the current plan.";
+      } else {
+        moved = " The ship date did not move at all — on this plan the start " +
+                "date is not what is holding it.";
+      }
+    }
+
+    var k = r.knock_on || {};
+    var cost;
+    if (k.later) {
+      cost = " Cost elsewhere: <b>" + k.later + "</b> other shipment" +
+             (k.later === 1 ? "" : "s") + " slip" + (k.later === 1 ? "s" : "") +
+             (k.worst ? ", worst " + esc(k.worst[0]) + " by " +
+                        k.worst[1] + " days" : "") + ".";
+      if (k.earlier) cost += " " + k.earlier + " improve.";
+    } else if (k.earlier) {
+      cost = " Nothing else slipped; " + k.earlier + " other shipment" +
+             (k.earlier === 1 ? "" : "s") + " improved.";
+    } else {
+      cost = " Nothing else in the plan moved.";
+    }
+
+    out.className = "sg-imp-start-out";
+    out.innerHTML = "Measured on a copy (" + esc(r.slot) + "), " +
+      esc(r.pinned) + " job" + (r.pinned === 1 ? "" : "s") + " pinned to " +
+      day(r.date) + ": ships <b>" + day(r.ships) + "</b>, " + verdict + "." +
+      moved + cost;
+  }
+
+  function watch(out, key) {
+    fetch(root.dataset.statusUrl).then(function (r) { return r.json(); })
+      .then(function (s) {
+        if (s.key && s.key !== key) return;       // someone else's run
+        if (!s.done) {
+          var where = s.phase === "copying"
+            ? "Copying the plan…"
+            : "Replanning the copy… " + (s.status || "");
+          out.className = "sg-imp-start-out is-work";
+          out.textContent = where + " this takes a few minutes.";
+          setTimeout(function () { watch(out, key); }, 5000);
+          return;
+        }
+        if (s.phase === "failed" || s.error) {
+          out.className = "sg-imp-start-out is-bad";
+          out.textContent = s.error || "The measurement failed.";
+          return;
+        }
+        if (s.result) render(out, s.result);
+      })
+      .catch(function (e) {
+        out.className = "sg-imp-start-out is-bad";
+        out.textContent = "Lost contact while measuring (" + e.message + ").";
+      });
+  }
+
+  // Switching shipment is a local swap - every option already carries its
+  // own dates and its own stored measurement.
+  Array.prototype.forEach.call(
+    root.querySelectorAll(".sg-imp-ship"), function (sel) {
+      sel.addEventListener("change", function () {
+        var box = sel.closest(".sg-imp-start");
+        var opt = sel.options[sel.selectedIndex];
+        box.querySelector(".sg-imp-startnow").textContent =
+          opt.dataset.start || "—";
+        // Cleared, not seeded with the current start - see the template.
+        box.querySelector(".sg-imp-date").value = "";
+        var out = box.querySelector(".sg-imp-start-out");
+        var prev = opt.dataset.measured || "";
+        out.className = "sg-imp-start-out";
+        out.textContent = prev;
+        out.hidden = !prev;
+      });
+    });
+
+  Array.prototype.forEach.call(
+    root.querySelectorAll(".imp-measure"), function (btn) {
+      btn.addEventListener("click", function () {
+        var box = btn.closest(".sg-imp-start");
+        var out = box.querySelector(".sg-imp-start-out");
+        var date = box.querySelector(".sg-imp-date").value;
+        var sel = box.querySelector(".sg-imp-ship");
+        // The measurement is per shipment, so the key comes from the
+        // dropdown - prove() parses the tag back out of it.
+        var key = "start:" + (sel ? sel.value : "");
+        var opt = sel ? sel.options[sel.selectedIndex] : null;
+
+        // A measurement costs a scenario copy, a solve of several minutes
+        // and one of the what-if slots. Refuse the two cases whose answer
+        // is already known, rather than spending all that to print it.
+        function refuse(msg) {
+          out.hidden = false;
+          out.className = "sg-imp-start-out is-bad";
+          out.textContent = msg;
+        }
+        if (!date) {
+          return refuse("Pick a start date first.");
+        }
+        if (opt && date === opt.dataset.startIso) {
+          return refuse(
+            "That is the date the plan already starts this shipment (" +
+            opt.dataset.start + "). Measuring it would replan for several " +
+            "minutes to report no change. Pick a different date.");
+        }
+
+        out.hidden = false;
+        out.className = "sg-imp-start-out is-work";
+        out.textContent = "Starting…";
+        post(root.dataset.proveUrl,
+             "key=" + encodeURIComponent(key) +
+             "&date=" + encodeURIComponent(date))
+          .then(function (res) {
+            if (!res.ok) {
+              out.className = "sg-imp-start-out is-bad";
+              out.textContent = res.data.error || "Could not start.";
+              return;
+            }
+            watch(out, key);
+          });
+      });
+    });
+})();
+</script>
+{% endblock %}

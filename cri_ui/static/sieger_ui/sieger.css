@@ -1,0 +1,2111 @@
+/* ------------------------------------------------------------------
+   Sieger APS - the house style.
+
+   Loaded AFTER frePPLe's core css, never replacing a core file by path,
+   so a frePPLe upgrade cannot silently drop our styling.
+
+   IDENTITY
+   --------
+   Taken straight off the Sieger wordmark, which is exactly two inks:
+   black #000000 and red #C7161D on white. So this is a black-and-white
+   instrument, and RED IS RESERVED - it marks the brand, and it marks
+   trouble. Nothing else is allowed to be red. Selected and active states
+   are solid black instead. The payoff is that on a screen of 76,000
+   scheduled operations, every red pixel means "look here".
+
+   Neutrals carry a faint warm bias toward the red rather than being flat
+   grey, so the greys belong to the same family as the mark.
+
+   THEMING
+   -------
+   frePPLe picks one of ten themes server-side and there is no dark marker
+   in the DOM. We override that with one Sieger identity in two variants:
+   prefers-color-scheme for the default, and a data-theme stamp on <html>
+   (set pre-paint in base_site.html) when the user has chosen. Every colour
+   is defined on bare :root first, so no value exists only inside a media
+   query - that is the classic unreadable-in-one-theme bug.
+   ------------------------------------------------------------------ */
+
+:root {
+  /* --- brand ------------------------------------------------------- */
+  --sg-red:       #C7161D;   /* the wordmark red, exactly */
+  --sg-red-soft:  rgba(199, 22, 29, .10);
+  --sg-red-line:  rgba(199, 22, 29, .35);
+
+  /* --- neutrals: warm-biased, not flat grey ------------------------ */
+  --sg-ground:    #F4F2F2;   /* the page behind everything */
+  --sg-surface:   #FFFFFF;   /* cards, panels, table bodies */
+  --sg-surface-2: #EDEAEA;   /* table heads, inset wells */
+  --sg-sunk:      #E6E2E2;
+  --sg-ink:       #141010;   /* headings, primary text */
+  --sg-ink-2:     #4A4241;   /* body */
+  --sg-quiet:     #7D7574;   /* labels, captions */
+  --sg-rule:      #D9D4D3;
+  --sg-rule-soft: #E8E4E4;
+
+  /* --- interaction: black, so red stays meaningful ------------------ */
+  --sg-accent:    #141010;
+  --sg-accent-in: #C7161D;   /* hover + focus borrow the brand red */
+  --sg-on-accent: #FFFFFF;
+
+  /* --- status: distinct hues, kept away from the brand red ---------- */
+  --sg-ok:        #2E7D52;
+  --sg-ok-soft:   rgba(46, 125, 82, .12);
+  --sg-warn:      #A8720C;
+  --sg-warn-soft: rgba(168, 114, 12, .13);
+  --sg-bad:       #C7161D;
+  --sg-bad-soft:  rgba(199, 22, 29, .10);
+
+  --sg-shadow:    0 1px 2px rgba(20, 16, 16, .06),
+                  0 4px 14px rgba(20, 16, 16, .05);
+
+  --sg-mono: FontAwesome, "IBM Plex Mono", ui-monospace, Consolas,
+             "Cascadia Mono", "DejaVu Sans Mono", monospace;
+  /* FontAwesome MUST lead this stack, exactly as frePPLe's own bootstrap
+     bundle does ("FontAwesome", "Open sans", ...). frePPLe drops icon
+     glyphs from the private-use area straight into text - the search
+     placeholder is U+F002, the breadcrumb divider is U+F105 - and some of
+     those land in pseudo-elements (::placeholder, ::before) where the
+     browser will not fall through a long stack to reach them. Leading with
+     it is safe: the face carries only PUA codepoints, so every real letter
+     falls through to Segoe. Move it to the end and the boxes come back. */
+  --sg-sans: FontAwesome, "Segoe UI Variable Text", "Segoe UI", Roboto,
+             -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* The logo red is too dark to sit on a black ground - it reads brown and
+   fails contrast. Lift it for dark, keeping the same hue. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sg-red:       #E8484E;
+    --sg-red-soft:  rgba(232, 72, 78, .15);
+    --sg-red-line:  rgba(232, 72, 78, .40);
+
+    --sg-ground:    #121010;
+    --sg-surface:   #1C1918;
+    --sg-surface-2: #242020;
+    --sg-sunk:      #171414;
+    --sg-ink:       #EDE9E8;
+    --sg-ink-2:     #B6ADAB;
+    --sg-quiet:     #8A807E;
+    --sg-rule:      #332E2D;
+    --sg-rule-soft: #262221;
+
+    --sg-accent:    #EDE9E8;
+    --sg-accent-in: #E8484E;
+    --sg-on-accent: #141010;
+
+    --sg-ok:        #5FB585;
+    --sg-ok-soft:   rgba(95, 181, 133, .14);
+    --sg-warn:      #D9A03F;
+    --sg-warn-soft: rgba(217, 160, 63, .14);
+    --sg-bad:       #E8484E;
+    --sg-bad-soft:  rgba(232, 72, 78, .14);
+
+    --sg-shadow:    0 1px 2px rgba(0, 0, 0, .5),
+                    0 4px 14px rgba(0, 0, 0, .35);
+  }
+}
+:root[data-theme="dark"] {
+  --sg-red:       #E8484E;
+  --sg-red-soft:  rgba(232, 72, 78, .15);
+  --sg-red-line:  rgba(232, 72, 78, .40);
+
+  --sg-ground:    #121010;
+  --sg-surface:   #1C1918;
+  --sg-surface-2: #242020;
+  --sg-sunk:      #171414;
+  --sg-ink:       #EDE9E8;
+  --sg-ink-2:     #B6ADAB;
+  --sg-quiet:     #8A807E;
+  --sg-rule:      #332E2D;
+  --sg-rule-soft: #262221;
+
+  --sg-accent:    #EDE9E8;
+  --sg-accent-in: #E8484E;
+  --sg-on-accent: #141010;
+
+  --sg-ok:        #5FB585;
+  --sg-ok-soft:   rgba(95, 181, 133, .14);
+  --sg-warn:      #D9A03F;
+  --sg-warn-soft: rgba(217, 160, 63, .14);
+  --sg-bad:       #E8484E;
+  --sg-bad-soft:  rgba(232, 72, 78, .14);
+
+  --sg-shadow:    0 1px 2px rgba(0, 0, 0, .5),
+                  0 4px 14px rgba(0, 0, 0, .35);
+}
+
+/* ==================================================================== the
+   page shell
+
+   frePPLe's bootstrap bundle paints body and navbar from whichever theme
+   is active. We are replacing that identity wholesale, so these few rules
+   need !important to win against a stylesheet we do not control and must
+   not edit. Everything below this block is ours and needs no such help.
+   ==================================================================== */
+
+body {
+  background: var(--sg-ground) !important;
+  color: var(--sg-ink-2) !important;
+  font-family: var(--sg-sans);
+  -webkit-font-smoothing: antialiased;
+}
+#workarea { padding-top: .25rem; }
+
+h1, h2, h3, h4 { color: var(--sg-ink); }
+h1 {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -.022em;
+}
+a { color: var(--sg-ink); text-decoration-color: var(--sg-red-line); }
+a:hover { color: var(--sg-red); }
+:focus-visible { outline: 2px solid var(--sg-red); outline-offset: 2px; }
+
+/* ---- the brand bar ------------------------------------------------- */
+/* Scoped by id, not by nav.navbar: frePPLe renders the breadcrumb strip as
+   a second .navbar, and it must not wear the brand furniture too. */
+#nav-menu-header.navbar {
+  background: var(--sg-surface) !important;
+  border-bottom: 0 !important;
+  padding-top: .3rem;
+  padding-bottom: .3rem;
+  position: relative;
+}
+/* The red hairline under the bar is the one piece of brand furniture that
+   is always on screen. */
+#nav-menu-header.navbar::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: var(--sg-red);
+}
+
+/* ---- the breadcrumb strip ------------------------------------------ */
+#nav-breadcrumb-header.navbar {
+  background: var(--sg-surface) !important;
+  border-bottom: 1px solid var(--sg-rule) !important;
+  box-shadow: var(--sg-shadow);
+  padding-top: .15rem;
+  padding-bottom: .15rem;
+  font-size: .85rem;
+}
+#nav-breadcrumb-header .breadcrumb-item,
+#nav-breadcrumb-header a { color: var(--sg-quiet); }
+#nav-breadcrumb-header a:hover { color: var(--sg-red); }
+#nav-breadcrumb-header .breadcrumb-item.active { color: var(--sg-ink); }
+.navbar .navbar-brand { padding: .1rem .35rem .1rem 0; margin-right: 1.1rem; }
+.navbar .nav-link,
+.navbar .dropdown-toggle { color: var(--sg-ink-2) !important; }
+.navbar .nav-link:hover,
+.navbar .dropdown-toggle:hover { color: var(--sg-red) !important; }
+.navbar .dropdown-menu {
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  box-shadow: var(--sg-shadow);
+  padding: .3rem;
+}
+.navbar .dropdown-item { color: var(--sg-ink-2); border-radius: 2px; }
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+  background: var(--sg-surface-2);
+  color: var(--sg-ink);
+}
+.navbar .dropdown-divider { border-top-color: var(--sg-rule-soft); }
+
+/* ---------------------------------------------------------- branding */
+.sieger-brand { display: inline-flex; align-items: center; gap: .55rem; }
+/* The mark is black on transparent. The plate is invisible on the light
+   navbar and is what keeps it legible on the dark one. */
+.sieger-brand-mark {
+  display: inline-flex;
+  background: #FFFFFF;
+  border-radius: 3px;
+  padding: .28rem .45rem;
+  line-height: 0;
+}
+.sieger-brand-mark img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+.sieger-brand-sub {
+  font-family: var(--sg-mono);
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .2em;
+  color: var(--sg-ink);
+  padding-left: .55rem;
+  border-left: 2px solid var(--sg-red);
+  line-height: 1;
+  align-self: center;
+}
+
+/* ---- the theme switch (injected by sieger-theme.js) ---------------- */
+.sg-theme {
+  background: none;
+  border: 1px solid var(--sg-rule);
+  color: var(--sg-ink-2);
+  border-radius: 3px;
+  padding: .3rem .6rem;
+  line-height: 1;
+  cursor: pointer;
+  font-size: .78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  white-space: nowrap;
+}
+.sg-theme .sg-theme-lbl {
+  font-family: var(--sg-mono);
+  font-size: .66rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.sg-theme:hover { border-color: var(--sg-red); color: var(--sg-red); }
+/* the label is a nicety, not the control - drop it before the icon */
+@media (max-width: 1200px) { .sg-theme .sg-theme-lbl { display: none; } }
+
+/* ---- shared page furniture ---------------------------------------- */
+.sieger-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding-bottom: .85rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--sg-rule);
+  position: relative;
+}
+/* short red tick under the title - echoes the notch in the wordmark */
+.sieger-hd::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -1px;
+  width: 44px; height: 2px;
+  background: var(--sg-red);
+}
+.sieger-eyebrow {
+  font-family: var(--sg-mono);
+  font-size: .66rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+  margin: 0 0 .35rem;
+}
+.sieger-h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  margin: 0;
+  line-height: 1.05;
+  color: var(--sg-ink);
+}
+.sieger-hd-meta { text-align: right; }
+.sieger-k {
+  display: block;
+  font-family: var(--sg-mono);
+  font-size: .63rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+}
+.sieger-v {
+  font-family: var(--sg-mono);
+  font-size: .92rem;
+  color: var(--sg-ink);
+  font-variant-numeric: tabular-nums;
+}
+.sieger-lede {
+  color: var(--sg-ink-2);
+  margin: 0 0 1.4rem;
+  max-width: 64ch;
+  font-size: .95rem;
+}
+
+/* ---------------------------------------------------------- cockpit */
+.sieger-cockpit { max-width: 1340px; padding: 1.5rem .25rem 3rem; }
+
+/* page header + lede now live in the identity block at the top */
+
+
+.sieger-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .sieger-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ------------------------------------------------------------ steps */
+.sieger-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+}
+.sieger-step {
+  display: grid;
+  grid-template-columns: 2.9rem minmax(0, 1fr) auto;
+  gap: 1.1rem;
+  align-items: center;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 4px;
+  padding: 1.05rem 1.25rem 1.05rem 1rem;
+  box-shadow: var(--sg-shadow);
+  position: relative;
+  transition: border-color .12s ease;
+}
+.sieger-step:hover { border-color: var(--sg-rule); }
+/* A step carrying a problem earns the red rail. Nothing else does. */
+.sieger-step:has(.sieger-stat-bad) { border-left: 3px solid var(--sg-red); }
+.sieger-num {
+  font-family: var(--sg-mono);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--sg-ink);
+  border-right: 1px solid var(--sg-rule-soft);
+  padding-right: 1rem;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.sieger-step-body { min-width: 0; }
+.sieger-step-t {
+  font-size: 1.02rem; font-weight: 650; margin: 0 0 .2rem;
+  color: var(--sg-ink); letter-spacing: -.008em;
+}
+.sieger-step-d { font-size: .86rem; color: var(--sg-quiet); margin: 0 0 .6rem; }
+
+.sieger-stats { display: flex; flex-wrap: wrap; gap: .4rem; }
+.sieger-stat {
+  font-size: .78rem;
+  padding: .2rem .6rem;
+  border-radius: 10px;
+  background: var(--sg-surface-2);
+  color: var(--sg-ink-2);
+  white-space: nowrap;
+}
+.sieger-stat b {
+  font-family: var(--sg-mono); font-weight: 600; font-size: .88rem;
+  font-variant-numeric: tabular-nums;
+}
+.sieger-stat-ok    { color: var(--sg-ok);   background: var(--sg-ok-soft); }
+.sieger-stat-warn  { color: var(--sg-warn); background: var(--sg-warn-soft); }
+.sieger-stat-bad   { color: var(--sg-bad);  background: var(--sg-bad-soft); }
+.sieger-stat-quiet { color: var(--sg-quiet); background: none; padding-left: .15rem; }
+
+.sieger-btn {
+  display: inline-block;
+  font-size: .81rem;
+  font-weight: 600;
+  letter-spacing: .005em;
+  padding: .35rem .85rem;
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  background: var(--sg-surface);
+  color: var(--sg-ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .12s ease, color .12s ease, background-color .12s ease;
+}
+.sieger-btn:hover {
+  border-color: var(--sg-red);
+  color: var(--sg-red);
+  text-decoration: none;
+}
+.sieger-btn:focus-visible { outline: 2px solid var(--sg-red); outline-offset: 2px; }
+/* the chosen one, in ink - solid enough to find at a glance without
+   spending the red */
+.sieger-btn-go {
+  border-color: var(--sg-accent);
+  background: var(--sg-accent);
+  color: var(--sg-on-accent);
+}
+.sieger-btn-go:hover {
+  background: var(--sg-accent);
+  color: var(--sg-on-accent);
+  border-color: var(--sg-red);
+  box-shadow: inset 0 -2px 0 var(--sg-red);
+}
+.sieger-btn-off { opacity: .45; }
+
+/* ------------------------------------------------------- side panel */
+.sieger-side { display: flex; flex-direction: column; gap: .7rem; }
+.sieger-card {
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  box-shadow: var(--sg-shadow);
+}
+.sieger-card-t {
+  font-family: var(--sg-mono);
+  font-size: .66rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+  margin: 0 0 .65rem;
+  font-weight: 600;
+}
+.sieger-card-f { font-size: .76rem; color: var(--sg-quiet); margin: .6rem 0 0; }
+.sieger-card-note { border-left: 3px solid var(--sg-warn); }
+.sieger-card-note p { font-size: .82rem; color: var(--sg-ink-2); margin: 0 0 .45rem; line-height: 1.5; }
+.sieger-card-note p:last-child { margin-bottom: 0; }
+
+.sieger-mini { width: 100%; font-size: .84rem; }
+.sieger-mini td { padding: .28rem 0; border-bottom: 1px solid var(--sg-rule-soft); }
+.sieger-mini tr:last-child td { border-bottom: 0; }
+.sieger-mini a { text-decoration: none; }
+.sieger-n {
+  text-align: right;
+  font-family: var(--sg-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--sg-ink);
+}
+
+/* -------------------------------------------------- grid chrome tidy
+   jqGrid builds the table interior at runtime, so we restyle it rather
+   than replace it. Typography and weight only - no layout changes, or
+   the grid's own column sizing breaks. */
+.ui-jqgrid .ui-jqgrid-htable th div {
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.ui-jqgrid .ui-jqgrid-btable td { padding-top: .3rem; padding-bottom: .3rem; }
+.ui-jqgrid .invStatus {
+  border-radius: 2px;
+  font-size: .78rem;
+  padding: .1rem .45rem;
+  display: inline-block;
+}
+
+/* ------------------------------------------------------------ the Gantt
+
+   Defects 1-2 are frePPLe's. Items 3-5 are readability work that the
+   chart never had. The swimlanes and the sticky label are pure CSS; the
+   time grid needs geometry only JS can compute, so it lives in
+   sieger-gantt.js and this file only colours what that script injects.
+
+   1. HEIGHT. The directive writes an inline `height: 233px` onto the
+      scroll container, no matter how tall the window is or how many
+      machines are in the plan. Each machine row is ~130px, so the panel
+      showed ONE machine and looked like the plant had a single resource.
+      Only an !important rule beats an inline style.
+
+   2. THE DATE HEADER SCROLLED AWAY. The header row lives inside the same
+      scrolling box as the bars, so scrolling to the second machine lost
+      the timeline. Sticky pins it. A table needs border-collapse:separate
+      for sticky cells to hold, and the background must be opaque or the
+      bars show through. It must be OUR surface token, not frePPLe's
+      --bs-body-bg: that one follows the frePPLe theme, which stays
+      light, and the date header came out white on a dark board.
+
+   Still bounded rather than auto-height: at full volume this is 75 rows,
+   and an unbounded Gantt would push the page into the thousands of pixels.
+   ------------------------------------------------------------------ */
+
+#gantt > .row > .col {
+  height: 70vh !important;
+  min-height: 420px !important;
+  overflow-y: auto !important;
+}
+
+#ganttgraph > table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+#ganttgraph > table > tbody > tr:first-child > th,
+#ganttgraph > table > tr:first-child > th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 6 !important;
+  background: var(--sg-surface) !important;
+}
+
+/* 3. SWIMLANES. Every machine is one <tr>, but nothing separated them,
+      so a bar could not be traced back to its row - especially with the
+      tall rows the lane-packer produces. A rule per row plus an
+      alternating tint fixes that. The tint is translucent so it works on
+      all ten frePPLe themes, and Bootstrap's .table paints its own cell
+      background through an inset box-shadow, which has to be cleared or
+      it wins. */
+
+#ganttgraph > table > tbody > tr > td,
+#ganttgraph > table > tr > td {
+  border-top: 1px solid var(--sg-rule) !important;
+  box-shadow: none !important;
+  vertical-align: top !important;
+  padding-top: .35rem !important;
+}
+#ganttgraph > table > tbody > tr:nth-of-type(even) > td:last-child,
+#ganttgraph > table > tr:nth-of-type(even) > td:last-child {
+  background-color: var(--sg-surface) !important;
+}
+
+/* 4. THE MACHINE NAME. Rows can run several hundred pixels tall, so
+      scrolling into the middle of one left a grey field with no name
+      anywhere on screen. sieger-gantt.js wraps the name in .sg-res -
+      a bare <td> already fills its row and so has no room to slide,
+      which is why the wrapper is needed at all. Pinning the wrapper
+      keeps the name in view for as long as its band is.
+
+      --sg-gantt-header-h must clear the sticky date header above: the
+      header svg is 34px, and the height here fixes the rest rather than
+      leaving it to Bootstrap's padding, so the two numbers agree. */
+
+:root { --sg-gantt-header-h: 52px; }
+
+#ganttgraph > table > tbody > tr:first-child > th,
+#ganttgraph > table > tr:first-child > th {
+  height: var(--sg-gantt-header-h) !important;
+}
+#ganttgraph > table > tbody > tr:first-child > th:first-child,
+#ganttgraph > table > tr:first-child > th:first-child {
+  left: 0 !important;
+  z-index: 7 !important;
+}
+#ganttgraph > table > tbody > tr > td:first-child,
+#ganttgraph > table > tr > td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 4 !important;
+  background: var(--sg-surface) !important;
+  border-right: 1px solid var(--sg-rule) !important;
+}
+#ganttgraph .sg-res {
+  position: sticky;
+  top: var(--sg-gantt-header-h);
+  display: block;
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* 5. TIME GRID. Injected by sieger-gantt.js into the same scaled user
+      space as the bars, so the lines sit exactly under the date
+      header's ticks. Weight carries the unit - a month turn reads
+      harder than a shift change - and every line stays faint enough
+      that the bars remain the thing you look at. */
+
+/* The chart column must be padding-free or nothing lines up. Bootstrap
+   puts .5rem either side of every cell, and the two halves of the chart
+   measure that column differently: gantt.header() sizes its ticks from
+   the cell's CONTENT width (16px short), while ganttDrv scales the bars
+   by the full COLUMN width. Stock frePPLe therefore drifts by up to 16px
+   between the date header and the bars beneath it. Zeroing the padding
+   makes content width equal column width, so header ticks, bars and our
+   grid lines all resolve to the same pixel. */
+
+#ganttheader,
+#ganttgraph > table > tbody > tr > td:last-child,
+#ganttgraph > table > tr > td:last-child {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+#ganttgraph line.sg-tg {
+  stroke-width: 1;
+  pointer-events: none;
+}
+#ganttgraph line.sg-tg-shift { stroke: rgba(128, 138, 145, .11); }
+#ganttgraph line.sg-tg-day   { stroke: rgba(128, 138, 145, .20); }
+#ganttgraph line.sg-tg-week  { stroke: rgba(128, 138, 145, .42); }
+#ganttgraph line.sg-tg-month { stroke: rgba(128, 138, 145, .60); }
+
+
+/* ================================================================== the
+   MACHINE SCHEDULE  (/machine-schedule/)
+
+   Purpose-built replacement for frePPLe's AngularJS Gantt, which could
+   not be rescued by styling: it lane-packs client-side on unsorted data
+   (so rows grew ~23 lanes deep against a true concurrency of 2) and
+   draws the whole two-month horizon at once (so four-hour jobs rendered
+   three pixels wide). See sieger_ui/views.py for the full account.
+
+   The view hands down every position as a percentage of the window, so
+   this file only has to lay out a track and let the browser reflow it.
+   No javascript is involved at any point.
+
+   Colours are translucent tints over whatever ground the active frePPLe
+   theme paints, matching the rest of this file, so the page is correct
+   on all ten themes without knowing which one is live.
+   ================================================================== */
+
+.sg-sc {
+  --sg-sc-lane: 30px;      /* one packing lane */
+  --sg-sc-gutter: 190px;   /* the machine-name column */
+  max-width: 1600px;
+  padding: 1.6rem .25rem 3rem;
+}
+
+/* ------------------------------------------------------------ controls */
+.sg-sc-bar-top {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+  margin: 1.2rem 0 .2rem;
+}
+.sg-sc-nav,
+.sg-sc-range { display: flex; align-items: center; gap: .35rem; }
+.sg-sc-range .sieger-k { margin-right: .2rem; }
+.sg-sc-facts { display: flex; gap: .4rem; flex-wrap: wrap; margin-left: auto; }
+
+/* --------------------------------------------------------------- chart */
+.sg-sc-chart {
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Header and every machine row share one grid template, which is what
+   keeps the date scale and the bars in the same column without any
+   measuring at runtime. */
+.sg-sc-head,
+.sg-sc-row {
+  display: grid;
+  grid-template-columns: var(--sg-sc-gutter) minmax(0, 1fr);
+}
+
+.sg-sc-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--sg-surface);
+  border-bottom: 2px solid var(--sg-rule);
+}
+.sg-sc-head .sg-sc-track { height: 34px; }
+
+.sg-sc-row { border-bottom: 1px solid var(--sg-rule-soft); }
+.sg-sc-row:last-child { border-bottom: 0; }
+.sg-sc-row:nth-child(even) { background: var(--sg-surface); }
+
+/* ------------------------------------------------------- name gutter */
+.sg-sc-name {
+  padding: .4rem .7rem;
+  border-right: 1px solid var(--sg-rule);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .1rem;
+  min-width: 0;
+}
+.sg-sc-headname {
+  font-family: var(--sg-mono);
+  font-size: .64rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+}
+.sg-sc-mach {
+  font-family: var(--sg-mono);
+  font-size: .84rem;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  color: var(--sg-ink);
+}
+.sg-sc-meta { font-size: .68rem; color: var(--sg-quiet); line-height: 1.15; }
+
+/* --------------------------------------------------------- the track */
+.sg-sc-track {
+  position: relative;
+  min-height: var(--sg-sc-lane);
+  overflow: hidden;
+}
+
+/* Day / week columns. Drawn as blocks rather than lines so the weekend
+   tint and the boundary rule come from one element. */
+.sg-sc-col,
+.sg-sc-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--sg-rule-soft);
+  pointer-events: none;
+}
+.sg-sc-col.is-major,
+.sg-sc-tick.is-major { border-left-color: var(--sg-rule); }
+.sg-sc-tick.is-weekend { background: var(--sg-sunk); }
+
+/* A closed day must read as closed even where a bar CROSSES it. Long
+   operations legitimately span Sundays, and a solid bar painted over
+   the weekend tint looked exactly like work scheduled on a day the
+   calendar shuts. The column now rides ABOVE the bars as a translucent
+   hatch, same stripe language as .is-proposed: the bar visibly pauses
+   through the closed day and resumes after it.
+   z-index 1 puts it over the bars (auto) and under the plan-date line
+   (2); pointer-events stays none, so a bar under the hatch remains
+   clickable. */
+.sg-sc-col.is-weekend {
+  z-index: 1;
+  background-color: var(--sg-sunk);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, .22) 0 4px,
+    rgba(255, 255, 255, 0) 4px 9px
+  );
+}
+
+.sg-sc-tick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sg-mono);
+  font-size: .63rem;
+  letter-spacing: .04em;
+  color: var(--sg-quiet);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sg-sc-tick.is-major span { font-weight: 600; color: var(--sg-ink); }
+
+/* The plan date. */
+.sg-sc-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px solid var(--sg-red);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------- the bars */
+.sg-sc-bar {
+  position: absolute;
+  height: calc(var(--sg-sc-lane) - 6px);
+  margin-top: 3px;
+  min-width: 3px;            /* a 20-minute job must still be clickable */
+  border-radius: 2px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  cursor: default;
+  transition: filter .1s ease;
+}
+.sg-sc-bar:hover { filter: brightness(1.12); }
+.sg-sc-lbl {
+  font-size: .68rem;
+  line-height: 1;
+  padding: 0 .3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* Healthy work is graphite, not green. A board that paints 90% of its bars
+   green has spent all its colour saying "fine" - and the two bars that
+   matter disappear into it. Quiet by default, loud only when late. */
+.sg-sc-bar.is-ok   { background: #4A4241; }
+.sg-sc-bar.is-late { background: #A8720C; }
+.sg-sc-bar.is-crit { background: var(--sg-red); }
+:root[data-theme="dark"] .sg-sc-bar.is-ok,
+:root:not([data-theme="light"]) .sg-sc-bar.is-ok { background: #6B615F; }
+
+/* Proposed work is not committed yet - hatch it rather than fade it, so
+   it stays legible on both light and dark themes. Kept deliberately faint:
+   today every operation in the plan is proposed, so a strong hatch would
+   be noise on every bar rather than a signal on some. It sharpens on its
+   own the moment approved orders start landing beside it. */
+.sg-sc-bar.is-proposed {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, .26) 0 4px,
+    rgba(255, 255, 255, 0) 4px 9px
+  );
+}
+
+/* Runs on past the edge of the window. */
+.sg-sc-bar.is-clipped { border-style: dashed; }
+
+.sg-sc-bar:hover {
+  outline: 2px solid var(--sg-accent);
+  outline-offset: -1px;
+  z-index: 4;
+}
+
+/* ================================================================ the key
+
+   Someone opening this board for the first time sees several thousand
+   coloured blocks and no way in. The key is the way in, so it sits ABOVE
+   the chart - it used to sit below one that scrolls for pages, which is
+   the same as not having one.
+
+   Every swatch here derives from the SAME token as the bar it describes.
+   The previous version had drifted to hard-coded greens and pinks while
+   the bars had moved on, which is worse than no key at all.
+   ================================================================== */
+.sg-sc-key {
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-radius: 4px;
+  box-shadow: var(--sg-shadow);
+  padding: .8rem 1rem .85rem;
+  margin: 0 0 1rem;
+}
+.sg-sc-key-h {
+  font-family: var(--sg-mono);
+  font-size: .62rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+  margin: 0 0 .6rem;
+}
+.sg-sc-key-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 1.6rem;
+}
+.sg-sc-key-i {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  font-size: .78rem;
+  min-width: 0;
+}
+.sg-sc-key-i b {
+  display: block;
+  font-weight: 600;
+  color: var(--sg-ink);
+  line-height: 1.25;
+}
+.sg-sc-key-i em {
+  display: block;
+  font-style: normal;
+  font-size: .72rem;
+  color: var(--sg-quiet);
+  line-height: 1.3;
+}
+.sg-sc-sw {
+  width: 22px;
+  height: 13px;
+  border-radius: 2px;
+  display: inline-block;
+  flex: none;
+  margin-top: .12rem;
+}
+/* the four states, straight off the bar rules */
+.sg-sc-sw.is-ok   { background: #4A4241; }
+.sg-sc-sw.is-late { background: #A8720C; }
+.sg-sc-sw.is-crit { background: var(--sg-red); }
+
+/* Legend swatch for a non-working day. Same token the header column and
+   the chart band use, with a hairline so a pale tint still reads as a
+   swatch against the key's own surface. */
+.sg-sc-sw.sg-sc-sw-off {
+  background: var(--sg-sunk);
+  border: 1px solid var(--sg-rule-soft);
+}
+:root[data-theme="dark"] .sg-sc-sw.is-ok,
+:root:not([data-theme="light"]) .sg-sc-sw.is-ok { background: #6B615F; }
+.sg-sc-sw.is-proposed {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, .28) 0 4px,
+    rgba(255, 255, 255, 0) 4px 9px
+  );
+}
+.sg-sc-sw-now {
+  width: 2px;
+  border-radius: 0;
+  background: var(--sg-red);
+  height: 15px;
+  margin-top: 0;
+}
+.sg-sc-sw-lane {
+  background: transparent;
+  border-left: 2px solid var(--sg-rule);
+  border-radius: 0;
+  width: 14px;
+  height: 15px;
+  box-shadow: inset 0 4px 0 -2px var(--sg-quiet), inset 0 -4px 0 -2px var(--sg-quiet);
+}
+.sg-sc-key-note {
+  margin: .75rem 0 0;
+  padding-top: .65rem;
+  border-top: 1px solid var(--sg-rule-soft);
+  font-size: .78rem;
+  color: var(--sg-ink-2);
+  line-height: 1.5;
+}
+.sg-sc-key-note b { color: var(--sg-ink); }
+
+@media (max-width: 820px) {
+  .sg-sc { --sg-sc-gutter: 120px; }
+  .sg-sc-facts { margin-left: 0; }
+}
+
+/* ====================================================================
+   The bar popup.
+
+   Colours come from the same tokens as the board, so a late bar and its
+   popup header read as the same object. The panel scrolls internally -
+   a long routing must never push the close button off screen.
+   ==================================================================== */
+.sg-sc-bar { cursor: pointer; }
+.sg-sc-bar:focus-visible { outline: 2px solid var(--sg-accent-in); outline-offset: 1px; }
+
+body.sg-md-on { overflow: hidden; }
+
+.sg-md { position: fixed; inset: 0; z-index: 1200; }
+.sg-md[hidden] { display: none; }
+.sg-md-back {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 20, 24, .55);
+}
+.sg-md-panel {
+  position: relative;
+  margin: 4vh auto;
+  max-width: 780px;
+  width: calc(100% - 2rem);
+  max-height: 92vh;
+  overflow-y: auto;
+  /* TOKENS, not literals. This panel used to hard-code white with a
+     prefers-color-scheme override, from before there was a Sieger token
+     set to inherit from. Everything INSIDE it - the fact chips, the
+     highlighted routing row - draws on --sg-* and so follows the theme
+     switch, while the panel itself followed only the OS. Let those two
+     disagree (OS light, switch set to dark) and you get a dark panel with
+     a white chip and an invisible white-on-white highlighted row. One
+     source of truth fixes both. */
+  background: var(--sg-surface);
+  color: var(--sg-ink-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 6px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .32);
+}
+.sg-md-x {
+  position: absolute;
+  top: .5rem;
+  right: .6rem;
+  border: 0;
+  background: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: .55;
+  padding: .1rem .4rem;
+}
+.sg-md-x:hover { opacity: 1; }
+.sg-md-load { padding: 2.5rem; text-align: center; opacity: .7; }
+
+.sg-md-hd {
+  padding: 1.1rem 2.4rem 1rem 1.3rem;
+  border-bottom: 1px solid var(--sg-rule);
+  border-left: 4px solid var(--sg-ok);
+}
+.sg-md-hd.is-late { border-left-color: var(--sg-warn); }
+.sg-md-hd.is-crit { border-left-color: var(--sg-bad); }
+.sg-md-eyebrow {
+  font-family: var(--sg-mono);
+  font-size: .68rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  opacity: .6;
+  margin: 0 0 .25rem;
+}
+.sg-md-hd h2 {
+  font-family: var(--sg-mono);
+  font-size: 1.15rem;
+  margin: 0;
+  word-break: break-all;
+}
+.sg-md-sub { margin: .2rem 0 0; font-size: .85rem; opacity: .75; }
+.sg-md-op {
+  margin: .35rem 0 0;
+  font-family: var(--sg-mono);
+  font-size: .78rem;
+  opacity: .65;
+  word-break: break-all;
+}
+
+.sg-md-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .8rem 1.3rem 0;
+}
+
+.sg-md-kv {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: .3rem .8rem;
+  margin: .9rem 0 0;
+  padding: 0 1.3rem;
+  font-size: .84rem;
+}
+.sg-md-kv dt { opacity: .6; }
+.sg-md-kv dd { margin: 0; font-family: var(--sg-mono); word-break: break-word; }
+.sg-md-kv dd em { font-style: normal; opacity: .6; }
+.sg-md-kv-tight { padding: 0; margin: .4rem 0 0; grid-template-columns: 5rem minmax(0, 1fr); }
+
+.sg-md-sec { padding: 1.2rem 1.3rem 0; }
+.sg-md-sec h3 {
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  opacity: .55;
+  margin: 0 0 .5rem;
+  padding-bottom: .3rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+.sg-md-note { margin: -.2rem 0 .5rem; font-size: .75rem; opacity: .6; font-style: italic; }
+.sg-md-empty { margin: 0; font-size: .82rem; opacity: .65; }
+
+.sg-md-tb { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.sg-md-tb th {
+  text-align: left;
+  font-weight: 500;
+  font-size: .68rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .5;
+  padding: .25rem .5rem .25rem 0;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+.sg-md-tb td {
+  padding: .3rem .5rem .3rem 0;
+  border-bottom: 1px solid var(--sg-rule-soft);
+  font-family: var(--sg-mono);
+  vertical-align: top;
+  word-break: break-word;
+}
+.sg-md-tb tr.is-this td {
+  background: var(--sg-surface-2);
+  font-weight: 600;
+}
+.sg-md-tb tr.is-this td:first-child { box-shadow: inset 3px 0 0 var(--sg-accent); }
+
+/* An order name in the popup is a way into its project timeline. */
+.sg-md-trace { color: inherit; text-decoration: none; border-bottom: 1px solid var(--sg-rule); }
+.sg-md-trace:hover { color: var(--sg-red); border-bottom-color: currentColor; }
+
+.sg-md-ord {
+  border: 1px solid var(--sg-rule-soft);
+  border-left: 3px solid var(--sg-ok);
+  border-radius: 4px;
+  padding: .6rem .8rem;
+  margin-bottom: .6rem;
+  background: var(--sg-surface);
+}
+.sg-md-ord.is-late { border-left-color: var(--sg-warn); }
+.sg-md-ord-hd { margin: 0; font-size: .84rem; font-family: var(--sg-mono); word-break: break-all; }
+.sg-md-bad { color: var(--sg-bad); }
+
+.sg-md-why { margin: .5rem 0 0; padding-left: 1rem; font-size: .78rem; }
+.sg-md-why li { margin-bottom: .3rem; }
+.sg-md-when { display: block; opacity: .55; font-family: var(--sg-mono); font-size: .72rem; }
+
+.sg-md-ft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: 1.2rem 1.3rem 1.3rem;
+  margin-top: .6rem;
+  border-top: 1px solid var(--sg-rule-soft);
+}
+
+@media (max-width: 560px) {
+  .sg-md-kv { grid-template-columns: 1fr; gap: .1rem; }
+  .sg-md-kv dt { margin-top: .4rem; }
+}
+
+/* ====================================================================
+   Phase 1/2 report screens: sequences, flow, bottlenecks, adherence,
+   scenario comparison. One table language for all five.
+   ==================================================================== */
+.sg-rp { max-width: 1200px; }
+
+.sg-rp-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 1.2rem;
+}
+
+.sg-rp-h2 {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .6;
+  margin: 1.8rem 0 .6rem;
+  padding-bottom: .3rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+
+.sg-rp-tblwrap {
+  overflow-x: auto;
+  border: 1px solid var(--sg-rule);
+  border-radius: 4px;
+  background: var(--sg-surface);
+  box-shadow: var(--sg-shadow);
+  margin: 0 0 1rem;
+}
+.sg-rp-tbl { border-collapse: collapse; width: 100%; font-size: .82rem; }
+.sg-rp-tbl th {
+  text-align: left;
+  font-family: var(--sg-mono);
+  font-size: .64rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+  background: var(--sg-surface-2);
+  padding: .5rem .7rem;
+  border-bottom: 1px solid var(--sg-rule);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.sg-rp-tbl td {
+  padding: .42rem .7rem;
+  border-bottom: 1px solid var(--sg-rule-soft);
+  vertical-align: middle;
+  color: var(--sg-ink-2);
+}
+.sg-rp-tbl tbody tr:hover td { background: var(--sg-surface-2); }
+.sg-rp-tbl tbody tr:last-child td { border-bottom: 0; }
+.sg-rp-tbl th.num, .sg-rp-tbl td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sg-rp-tbl td.mono { font-family: var(--sg-mono); font-size: .78rem; word-break: break-all; }
+.sg-rp-warncell { color: var(--sg-warn); font-weight: 600; }
+.sg-rp-note { font-size: .8rem; color: var(--sg-quiet); max-width: 70ch; }
+
+/* histogram bars */
+.sg-rp-hist { max-width: 620px; margin: 0 0 1rem; }
+.sg-rp-histrow {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0,1fr) 7rem;
+  align-items: center;
+  gap: .6rem;
+  margin: .22rem 0;
+  font-size: .8rem;
+}
+.sg-rp-histlabel { font-family: var(--sg-mono); opacity: .7; text-align: right; }
+.sg-rp-histbar {
+  display: block;
+  height: 12px;
+  background: var(--sg-surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sg-rp-histbar i {
+  display: block;
+  height: 100%;
+  background: var(--sg-accent);
+  border-radius: 2px;
+}
+.sg-rp-histval { font-variant-numeric: tabular-nums; }
+.sg-rp-histval em { font-style: normal; opacity: .55; }
+.sg-rp-barcell { width: 130px; }
+.sg-rp-barcell .sg-rp-histbar i { background: var(--sg-ok); }
+
+/* bottleneck heatmap cells */
+.sg-rp-heat td.sg-rp-cell { font-family: var(--sg-mono); font-size: .76rem; }
+.sg-rp-cell.is-idle { opacity: .3; }
+.sg-rp-cell.is-hot  { background: var(--sg-warn-soft); color: var(--sg-warn); font-weight: 600; }
+.sg-rp-cell.is-over { background: var(--sg-red-soft);  color: var(--sg-red);  font-weight: 700; }
+
+/* ================================================================== the
+   MACHINE SCHEDULE - sections, groups and colour-by-order (M1)
+
+   The board is now folded section -> machine group -> machine, mirroring
+   the Resource hierarchy the loader builds (MCSP machine shop, SMDN sheet
+   metal). Same rules as everything above: translucent tints over the
+   active theme's ground, no hard surface colours.
+   ================================================================== */
+
+/* section header - a full-width button so the whole strip toggles */
+.sg-sc-sec-hd {
+  width: 100%;
+  display: flex;
+  gap: .6rem;
+  align-items: baseline;
+  background: var(--sg-surface-2);
+  border: 0;
+  border-bottom: 1px solid var(--sg-rule);
+  padding: .45rem .6rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.sg-sc-sec-hd b { letter-spacing: .04em; }
+.sg-sc-sec-lbl { opacity: .7; }
+.sg-sc-sec-arrow {
+  display: inline-block;
+  transition: transform .12s ease;
+  font-size: .7rem;
+  opacity: .6;
+}
+.sg-sc-sec.is-collapsed .sg-sc-sec-arrow { transform: rotate(-90deg); }
+.sg-sc-sec-roll {
+  margin-left: auto;
+  font-size: .7rem;
+  opacity: .65;
+  font-family: var(--sg-mono);
+  white-space: nowrap;
+}
+.sg-sc-sec-roll .is-warn { font-style: normal; color: var(--sg-warn); font-weight: 600; }
+
+/* machine-group divider - slim, non-collapsible, links to ?group= */
+.sg-sc-grp {
+  display: flex;
+  gap: .5rem;
+  align-items: baseline;
+  padding: .15rem .6rem;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--sg-rule-soft);
+}
+.sg-sc-grp a { color: inherit; text-decoration: none; opacity: .75; }
+.sg-sc-grp a:hover { opacity: 1; text-decoration: underline; }
+.sg-sc-grp span { opacity: .45; text-transform: none; letter-spacing: 0; }
+
+/* the group-filter clear cross in the toolbar */
+.sg-sc-clear { text-decoration: none; opacity: .6; padding: 0 .2rem; }
+.sg-sc-clear:hover { opacity: 1; }
+
+/* order filter select - kept visually in the button family */
+.sg-sc-demand {
+  font: inherit;
+  font-size: .78rem;
+  max-width: 220px;
+  padding: .25rem .4rem;
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  background: var(--sg-surface);
+  color: inherit;
+}
+
+/* colour-by-order mode: each order gets a stable hue computed server-side
+   (crc32 of the demand name), handed down as --dh on the bar. Tone is
+   still readable through the border. */
+.sg-sc.is-byorder .sg-sc-bar { background: hsl(var(--dh) 45% 62%); }
+.sg-sc.is-byorder .sg-sc-bar.is-late { border-color: var(--sg-warn); border-width: 2px; }
+.sg-sc.is-byorder .sg-sc-bar.is-crit { border-color: var(--sg-bad); border-width: 2px; }
+
+/* tracing one order through the plant */
+.sg-sc-bar.is-dim { opacity: .18; }
+.sg-sc-bar.is-hl {
+  outline: 2px solid var(--sg-accent-in);
+  outline-offset: -1px;
+  z-index: 5;
+}
+
+/* ================================================================== the
+   PROJECT TIMELINE  (/projects/ and /projects/<order>/)  (M2)
+
+   Both screens reuse the machine schedule's chart classes wholesale -
+   same head/track/tick/bar geometry - so this block only adds what is
+   genuinely new: the due-date marker, the "not planned" pill, and the
+   run group headers.
+   ================================================================== */
+
+/* the due date - a vertical marker in the amber accent, distinct from
+   the teal plan-date line */
+.sg-pj-due {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px solid var(--sg-red);
+  z-index: 2;
+  pointer-events: none;
+}
+.sg-pj-due::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -5px;
+  border: 4px solid transparent;
+  border-top-color: var(--sg-accent-in);
+}
+.sg-pj-sw-due { background: var(--sg-accent-in); }
+
+/* overview rows: one lane each, order number is the link */
+.sg-pj-row .sg-sc-track { height: var(--sg-sc-lane); }
+.sg-pj-ord {
+  font-family: var(--sg-mono);
+  font-size: .8rem;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.sg-pj-ord:hover { color: var(--sg-accent); text-decoration: underline; }
+a.sg-sc-bar { text-decoration: none; color: inherit; cursor: pointer; }
+
+.sg-pj-pill {
+  position: absolute;
+  top: 50%;
+  left: .5rem;
+  transform: translateY(-50%);
+  font-size: .68rem;
+  padding: .1rem .5rem;
+  border: 1px dashed var(--sg-rule);
+  border-radius: 9px;
+  opacity: .6;
+  white-space: nowrap;
+}
+
+/* run group headers on the single-order page */
+.sg-pj-run b { letter-spacing: .02em; }
+
+/* search + pager, in the house button family */
+.sg-pj-form { display: flex; gap: .35rem; align-items: center; }
+.sg-pj-search {
+  font: inherit;
+  font-size: .78rem;
+  padding: .25rem .5rem;
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  background: var(--sg-surface);
+  color: inherit;
+  width: 220px;
+}
+.sg-pj-pager {
+  display: flex;
+  gap: .4rem;
+  align-items: center;
+  margin: .8rem 0;
+  font-size: .78rem;
+}
+
+/* ================================================================== the
+   RELEASE WINDOW  (/release/)  (M3)
+
+   Checkpoint cards are native <details>. Tone comes from the modifier:
+   is-clear (nothing to do), is-open (blocks release), is-acked
+   (accepted by a named planner), is-info (cannot block).
+   ================================================================== */
+
+.sg-rl { max-width: 1100px; padding: 1.6rem .25rem 3rem; }
+
+.sg-rl-cards { display: flex; flex-direction: column; gap: .6rem; margin: 1rem 0; }
+
+.sg-rl-card {
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  background: var(--sg-surface);
+}
+.sg-rl-card > summary {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .7rem;
+  cursor: pointer;
+  list-style: none;
+}
+.sg-rl-card > summary::-webkit-details-marker { display: none; }
+.sg-rl-title { font-weight: 600; }
+.sg-rl-count { font-family: var(--sg-mono); font-size: 1rem; }
+.sg-rl-state { font-size: .72rem; opacity: .65; margin-right: auto; }
+.sg-rl-ack { margin-left: auto; }
+.sg-rl-state + .sg-rl-ack { margin-left: 0; }
+
+.sg-rl-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--sg-quiet);
+}
+.sg-rl-card.is-clear .sg-rl-dot { background: var(--sg-ok); }
+.sg-rl-card.is-open  .sg-rl-dot { background: var(--sg-bad); }
+.sg-rl-card.is-acked .sg-rl-dot { background: var(--sg-warn); }
+
+.sg-rl-body { padding: .2rem .7rem .8rem; border-top: 1px solid var(--sg-rule-soft); }
+.sg-rl-note { font-size: .78rem; opacity: .8; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.sg-rl-tbwrap { overflow-x: auto; }
+.sg-rl-more, .sg-rl-empty { font-size: .74rem; opacity: .6; }
+
+/* the release footer */
+.sg-rl-foot {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--sg-rule);
+  border-radius: 3px;
+  background: var(--sg-surface-2);
+  padding: .9rem 1rem;
+  margin-top: 1.2rem;
+}
+.sg-rl-foot-num b { font-size: 1.5rem; font-family: var(--sg-mono); margin-right: .3rem; }
+.sg-rl-foot-note { font-size: .74rem; opacity: .65; max-width: 420px; }
+.sg-rl-go { margin-left: auto; font-size: .9rem; padding: .5rem 1.1rem; }
+.sg-rl-go[disabled] { opacity: .45; cursor: not-allowed; }
+.sg-rl-why { width: 100%; font-size: .74rem; color: var(--sg-warn); margin: .2rem 0 0; }
+.sg-rl-err {
+  border: 1px solid var(--sg-bad);
+  border-radius: 3px;
+  color: var(--sg-bad);
+  padding: .5rem .7rem;
+  font-size: .8rem;
+  margin: .6rem 0;
+}
+.sg-rl-blocked { border-color: var(--sg-warn); }
+
+/* ================================================================== the
+   MACHINE SCHEDULE - drag-and-drop rescheduling (M4)
+
+   The ghost is a fixed-position clone following the pointer; the row
+   under it gets is-drop; the tip floats beside the cursor and tints
+   when the slot already holds work. The banner across the top reports
+   the pin-and-replan lifecycle.
+   ================================================================== */
+
+.sg-sc-bar[data-status="proposed"],
+.sg-sc-bar[data-status="approved"] { touch-action: none; }
+
+.sg-mv-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin: 0;
+  z-index: 60;
+  opacity: .85;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+.sg-sc-bar.is-moving { opacity: .25; }
+.sg-sc-row.is-drop { outline: 2px dashed var(--sg-accent); outline-offset: -2px; }
+body.sg-mv-on { user-select: none; cursor: grabbing; }
+
+.sg-mv-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 61;
+  font-family: var(--sg-mono);
+  font-size: .72rem;
+  padding: .25rem .5rem;
+  border-radius: 3px;
+  background: #1d2327;
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.sg-mv-tip.is-clash { background: var(--sg-bad); }
+
+/* concern list inside the confirm dialog */
+.sg-mv-concerns { list-style: none; margin: .3rem 0; padding: 0; }
+.sg-mv-concerns li {
+  padding: .35rem .5rem .35rem .9rem;
+  margin: .25rem 0;
+  font-size: .78rem;
+  border-left: 3px solid var(--sg-quiet);
+  background: var(--sg-surface);
+}
+.sg-mv-concerns li.is-warn  { border-left-color: var(--sg-warn); }
+.sg-mv-concerns li.is-error { border-left-color: var(--sg-bad); }
+.sg-mv-concerns li.is-info  { border-left-color: var(--sg-accent); }
+.sg-mv-concerns small { opacity: .7; }
+
+/* the move banner */
+.sg-mv-banner {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--sg-rule);
+  border-left-width: 4px;
+  border-radius: 3px;
+  background: var(--sg-surface-2);
+  padding: .55rem .8rem;
+  margin: .6rem 0;
+  font-size: .8rem;
+}
+.sg-mv-banner.is-replanning,
+.sg-mv-banner.is-undoing { border-left-color: var(--sg-accent); }
+.sg-mv-banner.is-done    { border-left-color: var(--sg-ok); }
+.sg-mv-banner.is-undone  { border-left-color: var(--sg-quiet); }
+.sg-mv-banner.is-failed  { border-left-color: var(--sg-bad); }
+.sg-mv-banner .sieger-btn { margin-left: 0; }
+.sg-mv-banner button:first-of-type { margin-left: auto; }
+
+.sg-mv-spin {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border: 2px solid var(--sg-accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: sg-mv-rot .8s linear infinite;
+}
+@keyframes sg-mv-rot { to { transform: rotate(360deg); } }
+
+/* Empty-state row inside a report table (bottlenecks). Deliberately a
+   full-width cell rather than a card outside the table, so the column
+   headers stay visible and the screen reads as "no rows yet", not
+   "screen broken". */
+.sg-rp-empty-row {
+  text-align: left;
+  padding: 1rem .6rem;
+  opacity: .7;
+  font-size: .8rem;
+}
+
+
+/* ==================================================================== the
+   frePPLe core widgets
+
+   Everything above styles screens we wrote. These rules cover the screens
+   frePPLe ships - execute, the data grids, the admin pages - which paint
+   from whichever theme is selected server-side. The active one is "earth",
+   whose accent is a tan #dcb68d, and it was surfacing on card headers,
+   scrollbars and grid chrome in the middle of an otherwise black-and-red
+   application.
+
+   Rather than switch frePPLe to a different theme (one setting, but it
+   moves under us on any upgrade and still would not be Sieger's colours),
+   these map the handful of core surfaces onto our tokens. !important is
+   needed throughout: we are overriding a compiled bootstrap bundle that
+   loads before us and that we must not edit.
+   ==================================================================== */
+
+/* ---- cards, panels, widgets ---------------------------------------- */
+.card {
+  background: var(--sg-surface) !important;
+  border: 1px solid var(--sg-rule) !important;
+  border-radius: 4px !important;
+  box-shadow: var(--sg-shadow);
+  scrollbar-color: var(--sg-rule) transparent !important;
+}
+.card-header {
+  background: var(--sg-surface-2) !important;
+  border-bottom: 1px solid var(--sg-rule) !important;
+  color: var(--sg-ink) !important;
+  font-weight: 650;
+  letter-spacing: -.008em;
+}
+.card-header a, .card-header .fa { color: var(--sg-quiet) !important; }
+.card-header a:hover, .card-header .fa:hover { color: var(--sg-red) !important; }
+
+/* ---- scrollbars ----------------------------------------------------- */
+/* The theme sets scrollbar-color on .card and on the grid body, and the
+   standard property wins over ::-webkit-scrollbar in Chromium - so the
+   tan survived a universal rule. Name the scrollers it targets. */
+*,
+.card,
+.ui-jqgrid,
+.ui-jqgrid-bdiv,
+.ui-jqgrid-hdiv,
+.scrollbar { scrollbar-color: var(--sg-rule) transparent !important; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--sg-rule);
+  border-radius: 6px;
+  border: 3px solid var(--sg-ground);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--sg-quiet); }
+
+/* ---- buttons -------------------------------------------------------- */
+.btn-primary {
+  background: var(--sg-accent) !important;
+  border-color: var(--sg-accent) !important;
+  color: var(--sg-on-accent) !important;
+  font-weight: 600;
+}
+.btn-primary:hover { box-shadow: inset 0 -2px 0 var(--sg-red); }
+.btn-secondary, .btn-outline-secondary {
+  background: var(--sg-surface) !important;
+  border-color: var(--sg-rule) !important;
+  color: var(--sg-ink-2) !important;
+}
+.btn-secondary:hover, .btn-outline-secondary:hover {
+  border-color: var(--sg-red) !important;
+  color: var(--sg-red) !important;
+}
+.btn-danger { background: var(--sg-red) !important; border-color: var(--sg-red) !important; }
+
+/* ---- form controls -------------------------------------------------- */
+.form-control, .form-select {
+  background: var(--sg-surface);
+  border-color: var(--sg-rule);
+  color: var(--sg-ink);
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--sg-red);
+  box-shadow: 0 0 0 .15rem var(--sg-red-soft);
+}
+
+/* ---- the data grids (jqGrid) ---------------------------------------- */
+.ui-jqgrid, .ui-jqgrid-view, .ui-jqgrid-bdiv {
+  background: var(--sg-surface) !important;
+  color: var(--sg-ink-2) !important;
+  border-color: var(--sg-rule) !important;
+}
+.ui-jqgrid .ui-jqgrid-hdiv,
+.ui-jqgrid .ui-jqgrid-htable th,
+.ui-jqgrid .ui-jqgrid-labels th {
+  background: var(--sg-surface-2) !important;
+  color: var(--sg-quiet) !important;
+  border-color: var(--sg-rule) !important;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.ui-jqgrid tr.jqgrow td { border-color: var(--sg-rule-soft) !important; }
+.ui-jqgrid tr.ui-row-ltr:hover td { background: var(--sg-surface-2) !important; }
+.ui-jqgrid .ui-pg-table, .ui-jqgrid .ui-jqgrid-pager {
+  background: var(--sg-surface-2) !important;
+  border-color: var(--sg-rule) !important;
+  color: var(--sg-ink-2) !important;
+}
+/* selected row: ink, not the theme's tint */
+.ui-jqgrid tr.ui-state-highlight td,
+.ui-state-highlight, .ui-widget-content .ui-state-highlight {
+  background: var(--sg-red-soft) !important;
+  border-color: var(--sg-red-line) !important;
+  color: var(--sg-ink) !important;
+}
+
+/* ---- tables --------------------------------------------------------- */
+.table { color: var(--sg-ink-2); }
+.table > :not(caption) > * > * { border-color: var(--sg-rule-soft); }
+.table > thead { background: var(--sg-surface-2); }
+.table > thead th { color: var(--sg-quiet); font-weight: 600; }
+
+/* ---- tabs, badges, alerts ------------------------------------------- */
+.nav-tabs { border-bottom-color: var(--sg-rule); }
+.nav-tabs .nav-link { color: var(--sg-quiet); border: 0; }
+.nav-tabs .nav-link:hover { color: var(--sg-ink); }
+.nav-tabs .nav-link.active {
+  color: var(--sg-ink) !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: inset 0 -2px 0 var(--sg-red);
+  font-weight: 600;
+}
+.badge.bg-primary { background: var(--sg-accent) !important; color: var(--sg-on-accent) !important; }
+.badge.bg-danger  { background: var(--sg-red) !important; }
+
+/* ==================================================================== the
+   menus
+
+   Planning ships eighteen entries in one column. sieger-nav.js splits it
+   on the dividers the menu data already carries; this lays the blocks out
+   side by side, gives each a heading, and lets the ambiguous entries carry
+   a line of explanation.
+   ==================================================================== */
+
+.sg-mm-menu {
+  padding: .85rem !important;
+  min-width: 0;
+  border: 1px solid var(--sg-rule) !important;
+  border-radius: 4px !important;
+  background: var(--sg-surface) !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .14), 0 2px 6px rgba(0, 0, 0, .08) !important;
+}
+.sg-mm-menu::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background: var(--sg-red);
+  margin: -.85rem -.85rem .7rem;
+  border-radius: 4px 4px 0 0;
+}
+.sg-mm { display: flex; gap: .3rem; align-items: stretch; }
+.sg-mm-col {
+  min-width: 15.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0 .35rem;
+}
+.sg-mm-col + .sg-mm-col { border-left: 1px solid var(--sg-rule-soft); }
+.sg-mm-h {
+  font-family: var(--sg-mono);
+  font-size: .62rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+  padding: .1rem .6rem .5rem;
+}
+a.sg-mm-a {
+  display: block;
+  padding: .38rem .6rem;
+  border-radius: 3px;
+  color: var(--sg-ink-2) !important;
+  text-decoration: none;
+  line-height: 1.3;
+  border-left: 2px solid transparent;
+}
+a.sg-mm-a:hover, a.sg-mm-a:focus {
+  background: var(--sg-surface-2) !important;
+  color: var(--sg-ink) !important;
+  border-left-color: var(--sg-red);
+}
+/* frePPLe capitalizes every menu label in CSS. That is tolerable on a
+   two-word link and wrong on a sentence - "Five Steps, In Order". The
+   labels arrive from Django already in sentence case, which is what the
+   rest of this application uses, so hand it back. */
+.sg-mm-t, .sg-mm-d, a.sg-mm-a { text-transform: none !important; }
+.sg-mm-t { display: block; font-weight: 600; font-size: .87rem; }
+.sg-mm-d {
+  display: block;
+  font-size: .73rem;
+  color: var(--sg-quiet);
+  margin-top: .05rem;
+  line-height: 1.35;
+}
+
+/* Under ~1100px the panel would run off screen - stack it and let the
+   dropdown scroll, which is still better than one flat list. */
+@media (max-width: 1100px) {
+  .sg-mm { flex-direction: column; }
+  .sg-mm-col { min-width: 0; }
+  .sg-mm-col + .sg-mm-col {
+    border-left: 0;
+    border-top: 1px solid var(--sg-rule-soft);
+    padding-top: .5rem;
+    margin-top: .4rem;
+  }
+  .sg-mm-menu { max-height: 75vh; overflow-y: auto; }
+}
+
+/* ==================================================================== the
+   search box (twitter typeahead)
+
+   Typeahead stacks TWO inputs: .tt-hint behind, showing the greyed
+   completion, and .tt-input in front, transparent, where you type. At
+   init it SNAPSHOTS the computed background of the original field and
+   writes it onto .tt-hint as an INLINE style - which froze to white and
+   then never moved again. Switch to dark and you get a white slab in the
+   navbar with near-white text on it: unreadable, and visibly a different
+   theme from everything around it.
+
+   Inline styles only lose to !important, hence the shouting. The
+   placeholder needs saying too - bootstrap points it at
+   --bs-secondary-color, which is not one of ours.
+   ==================================================================== */
+
+.twitter-typeahead { width: 100%; }
+.twitter-typeahead .tt-hint,
+.twitter-typeahead .tt-input,
+input.search-input {
+  background: var(--sg-surface) !important;
+  border: 1px solid var(--sg-rule) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+/* The front field must stay see-through, or it hides the completion
+   behind it - but its own text and caret are ours. */
+.twitter-typeahead .tt-input {
+  background: transparent !important;
+  color: var(--sg-ink) !important;
+  caret-color: var(--sg-red);
+}
+.twitter-typeahead .tt-hint { color: var(--sg-quiet) !important; }
+.twitter-typeahead .tt-input:focus {
+  border-color: var(--sg-red) !important;
+  outline: none;
+  box-shadow: 0 0 0 .15rem var(--sg-red-soft) !important;
+}
+input.search-input::placeholder,
+input.search-input::-webkit-input-placeholder {
+  color: var(--sg-quiet) !important;
+  opacity: 1;
+}
+
+/* the suggestion list */
+.tt-menu {
+  background: var(--sg-surface) !important;
+  border: 1px solid var(--sg-rule) !important;
+  border-radius: 4px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .14), 0 2px 6px rgba(0, 0, 0, .08);
+  padding: .3rem;
+  min-width: 100%;
+}
+.tt-menu .tt-suggestion,
+.tt-menu .tt-dataset > div {
+  color: var(--sg-ink-2);
+  padding: .35rem .6rem;
+  border-radius: 3px;
+  border-left: 2px solid transparent;
+}
+.tt-menu .tt-suggestion:hover,
+.tt-menu .tt-suggestion.tt-cursor {
+  background: var(--sg-surface-2);
+  color: var(--sg-ink);
+  border-left-color: var(--sg-red);
+  cursor: pointer;
+}
+.tt-menu .tt-dataset .tt-header,
+.tt-menu .tt-dataset strong {
+  font-family: var(--sg-mono);
+  font-size: .62rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--sg-quiet);
+}
+
+/* ==================================================================== the
+   constraints screen
+   ==================================================================== */
+.sg-toc-form { margin-bottom: 1rem; }
+.sg-toc-lbl {
+  display: block;
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--sg-ink);
+  margin: .9rem 0 .35rem;
+}
+.sg-toc-form > .sg-toc-lbl:first-of-type { margin-top: .2rem; }
+.sg-toc-opt {
+  font-weight: 400;
+  font-size: .75rem;
+  color: var(--sg-quiet);
+  text-transform: none;
+}
+.sg-toc-num { max-width: 9rem; }
+.sg-toc-hint {
+  font-size: .78rem;
+  color: var(--sg-quiet);
+  margin: .35rem 0 0;
+  line-height: 1.45;
+  max-width: 56ch;
+}
+.sg-toc-hint code {
+  font-family: var(--sg-mono);
+  font-size: .74rem;
+  background: var(--sg-surface-2);
+  padding: .05rem .3rem;
+  border-radius: 2px;
+}
+.sg-toc-actions {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--sg-rule-soft);
+  flex-wrap: wrap;
+}
+/* The candidate table scrolls inside its own box, so Save and Run stay on
+   screen however many work centres the plant has. Without this the actions
+   sit below a table that grows with the data, and a planner has to scroll
+   past every row to reach the button that acts on them. */
+.sg-toc-scroll {
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--sg-rule-soft);
+  border-radius: 3px;
+}
+/* The header has to stay put, or a scrolled table loses its column names. */
+.sg-toc-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sg-surface);
+}
+.sg-toc-actions-main { margin-top: .8rem; }
+.sg-toc-pick { width: 3rem; text-align: center; }
+.sg-toc-rate {
+  width: 5.5rem;
+  padding: .15rem .35rem;
+  font-family: var(--sg-mono);
+  font-size: .76rem;
+  text-align: right;
+  color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule);
+  border-radius: 2px;
+}
+.sg-toc-warn {
+  margin: .7rem 0 0;
+  padding: .6rem .75rem;
+  font-size: .8rem;
+  line-height: 1.5;
+  border-left: 3px solid var(--sg-bad);
+  background: var(--sg-red-soft);
+  border-radius: 2px;
+}
+
+.sg-toc-msg { font-size: .82rem; color: var(--sg-quiet); }
+.sg-toc-msg.is-ok  { color: var(--sg-ok); }
+.sg-toc-msg.is-bad { color: var(--sg-bad); font-weight: 600; }
+.sg-toc-last { margin-bottom: 1rem; }
+
+/* the row the planner has chosen, so the table and the box agree at a glance */
+.sg-rp-tbl tr.sg-toc-is-drum td {
+  background: var(--sg-red-soft);
+  font-weight: 600;
+}
+.sg-toc-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: .84rem;
+  color: var(--sg-ink-2);
+  line-height: 1.5;
+}
+.sg-toc-steps li { margin-bottom: .5rem; }
+.sg-toc-steps li:last-child { margin-bottom: 0; }
+.sg-toc-steps b { color: var(--sg-ink); }
+
+/* ---- home screen: shipment summary cards ------------------------------ */
+.sg-ship-totals { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .6rem 0 1rem; }
+.sg-ship-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: .8rem;
+}
+.sg-ship-card {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .7rem .8rem .8rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-left: 4px solid var(--sg-ok);
+  border-radius: 6px;
+}
+.sg-ship-card.is-late { border-left-color: var(--sg-warn); }
+.sg-ship-card.is-crit { border-left-color: var(--sg-bad); }
+.sg-ship-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.sg-ship-title h2 {
+  margin: 0; font-family: var(--sg-mono); font-size: .82rem; font-weight: 700;
+  line-height: 1.2; word-break: break-word;
+}
+.sg-ship-code { margin: .15rem 0 0; font-size: .62rem; opacity: .6; font-family: var(--sg-mono); }
+.sg-ship-v { flex: 0 0 auto; padding: .1rem .4rem; font-family: var(--sg-mono); font-size: .6rem; border-radius: 10px; white-space: nowrap; }
+.sg-ship-v.ok { color: var(--sg-ok); border: 1px solid var(--sg-ok); }
+.sg-ship-v.late { color: var(--sg-warn); border: 1px solid var(--sg-warn); }
+.sg-ship-v.crit { color: var(--sg-bad); border: 1px solid var(--sg-bad); }
+.sg-ship-dates { display: flex; gap: .5rem; }
+.sg-ship-dates > div { flex: 1 1 0; min-width: 0; }
+.sg-ship-dates i {
+  display: block; font-style: normal; font-family: var(--sg-mono);
+  font-size: .54rem; letter-spacing: .1em; text-transform: uppercase; opacity: .55;
+}
+.sg-ship-dates b { display: block; font-size: .78rem; line-height: 1.3; margin-top: .1rem; }
+.sg-ship-dates small { display: block; font-size: .6rem; opacity: .6; }
+.sg-ship-obar { position: relative; height: 14px; border-radius: 3px; background: var(--sg-sunk); overflow: hidden; }
+.sg-ship-obar i { position: absolute; inset: 0 auto 0 0; background: var(--sg-ok); opacity: .8; }
+.sg-ship-card.is-crit .sg-ship-obar i, .sg-ship-card.is-late .sg-ship-obar i { background: var(--sg-warn); }
+.sg-ship-obar span {
+  position: relative; display: block; padding: 0 .4rem;
+  font-family: var(--sg-mono); font-size: .56rem; line-height: 14px; white-space: nowrap;
+}
+.sg-ship-hours { margin: 0; font-size: .68rem; opacity: .85; }
+.sg-ship-issues { margin: 0; padding: 0; list-style: none; font-size: .66rem; display: flex; flex-direction: column; gap: .15rem; }
+.sg-ship-pill {
+  display: inline-block; min-width: 1.6rem; text-align: center;
+  font-family: var(--sg-mono); font-size: .56rem; padding: 0 .2rem;
+  color: var(--sg-bad); border: 1px solid var(--sg-bad); border-radius: 2px; margin-right: .25rem;
+}
+.sg-ship-action {
+  margin: 0; padding: .3rem .45rem; font-size: .68rem; line-height: 1.4;
+  background: var(--sg-surface-2); border-left: 2px solid var(--sg-accent); border-radius: 2px;
+}
+.sg-ship-links { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: auto; padding-top: .2rem; }
+
+/* ---- shipment analysis screen + home table ---------------------------- */
+.sg-ship-story { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: .6rem 0; }
+.sg-ship-story > div { min-width: 0; }
+.sg-ship-story i {
+  display: block; font-style: normal; font-family: var(--sg-mono);
+  font-size: .54rem; letter-spacing: .1em; text-transform: uppercase; opacity: .55;
+}
+.sg-ship-story b { font-size: .82rem; }
+.sg-ship-story small { display: block; font-size: .6rem; opacity: .6; }
+.sg-ship-story-pad { flex: 1 1 auto; }
+.sg-ship-cols {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: .8rem; margin-top: .8rem;
+}
+.sg-ship-panel {
+  padding: .6rem .7rem; background: var(--sg-surface);
+  border: 1px solid var(--sg-rule); border-radius: 6px;
+}
+.sg-ship-panel h2 {
+  margin: 0 0 .45rem; font-family: var(--sg-mono); font-size: .66rem;
+  letter-spacing: .12em; text-transform: uppercase; opacity: .7;
+}
+.sg-ship-tb { width: 100%; border-collapse: collapse; font-size: .7rem; }
+.sg-ship-tb th {
+  text-align: left; font-family: var(--sg-mono); font-size: .56rem;
+  text-transform: uppercase; letter-spacing: .06em; opacity: .55;
+  border-bottom: 1px solid var(--sg-rule); padding: .15rem .3rem;
+}
+.sg-ship-tb td { padding: .18rem .3rem; border-bottom: 1px solid var(--sg-rule-soft); vertical-align: top; }
+.sg-ship-tb td.n, .sg-ship-tb th.n { text-align: right; font-family: var(--sg-mono); white-space: nowrap; }
+.sg-ship-hbar { height: 8px; background: var(--sg-sunk); border-radius: 2px; overflow: hidden; }
+.sg-ship-hbar i { display: block; height: 100%; background: var(--sg-accent); opacity: .75; }
+.sg-home-row { cursor: pointer; }
+.sg-home-row:hover { background: var(--sg-surface-2); }
+.sg-home-row.is-late td:first-child { box-shadow: inset 3px 0 0 var(--sg-warn); }
+.sg-home-row.is-crit td:first-child { box-shadow: inset 3px 0 0 var(--sg-bad); }
+
+/* ---- shipment tables: real breathing room ------------------------------
+   sg-sd-t had no rules of its own - the home summary and start dates
+   were rendering on browser-default cell padding, which read as
+   cramped. One shared block for both, tuned for scanning. */
+.sg-sd-t { border-collapse: collapse; width: 100%; font-size: .76rem; }
+.sg-sd-t th {
+  text-align: left; font-family: var(--sg-mono); font-size: .6rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--sg-quiet);
+  background: var(--sg-surface-2); padding: .6rem .8rem;
+  border-bottom: 1px solid var(--sg-rule); white-space: nowrap;
+  position: sticky; top: 0; z-index: 1;
+}
+.sg-sd-t td {
+  padding: .6rem .8rem; border-bottom: 1px solid var(--sg-rule-soft);
+  vertical-align: top; line-height: 1.5;
+}
+.sg-sd-t tbody tr:last-child td { border-bottom: 0; }
+.sg-sd-t td.mono { font-family: var(--sg-mono); font-size: .68rem; }
+.sg-sd-t td small { display: block; margin-top: .12rem; }
+
+/* Home summary specifics: codes never wrap, the action column gets
+   room to say its sentence, bars keep their lane. */
+.sg-home-t td:nth-child(1), .sg-home-t td:nth-child(3),
+.sg-home-t td:nth-child(6) { white-space: nowrap; }
+.sg-home-t th:nth-child(2), .sg-home-t td:nth-child(2) { min-width: 130px; }
+.sg-home-t th:nth-child(9), .sg-home-t td:nth-child(9) { min-width: 230px; }
+.sg-home-t tbody tr { transition: background .1s ease; }
+
+/* ---- the shipment switcher on the core screens ------------------------ */
+.sg-shipbar {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .45rem .7rem; margin: 0 0 .8rem;
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-rule);
+  border-left: 4px solid var(--sg-accent);
+  border-radius: 4px;
+}
+.sg-shipbar-l { display: inline-flex; align-items: center; gap: .45rem; margin: 0; }
+.sg-shipbar-l > span {
+  font-family: var(--sg-mono); font-size: .6rem; letter-spacing: .12em;
+  text-transform: uppercase; opacity: .6;
+}
+.sg-shipbar-sel {
+  max-width: 340px; padding: .28rem .4rem;
+  font-size: .8rem; color: inherit;
+  background: var(--sg-surface-2);
+  border: 1px solid var(--sg-rule); border-radius: 2px;
+}
+.sg-shipbar-note { font-size: .68rem; opacity: .6; }

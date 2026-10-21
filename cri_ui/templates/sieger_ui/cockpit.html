@@ -1,0 +1,108 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+The home screen mirrors the planners' own first sheet (DSQ Details,
+columns K-Q): Project Code, Project Description, Item, Delivery Date,
+Week - with the live plan standing beside it (Projected Ship, on-target
+share, machine hours, what to do). Click a row for the full analysis
+screen of that shipment. Everything derives from the live plan; a new
+DSQ appears here the moment it carries production orders.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sieger-cockpit">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">Production overview</h1>
+      <p class="cri-intro">Your delivery commitments. Your capacity. One clear plan.</p>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan starts</span>
+      <span class="sieger-v">{{ now|date:"D d M Y" }}</span>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">last supply plan</span>
+      <span class="sieger-v">{% if last_run %}{{ last_run.finished|date:"d M Y H:i" }}{% else %}&mdash;{% endif %}</span>
+    </div>
+  </header>
+
+  <section class="cri-summary" aria-label="Production plan summary">
+    <div class="cri-metric"><span class="cri-metric-label">Shipments</span><strong class="cri-metric-value">{{ ships|length }}</strong><span class="cri-metric-note">Delivery commitments in the plan</span></div>
+    <div class="cri-metric"><span class="cri-metric-label">Machine hours</span><strong class="cri-metric-value">{{ total_h }}</strong><span class="cri-metric-note">Active workload, excluding nonworking time</span></div>
+    <div class="cri-metric"><span class="cri-metric-label">On-target workload</span><strong class="cri-metric-value">{% if ships %}{{ ok_hpct }}%{% else %}&mdash;{% endif %}</strong><span class="cri-metric-note">Share of hours on on-target work</span></div>
+    <div class="cri-metric{% if late_ships %} cri-metric-attention{% endif %}"><span class="cri-metric-label">Needs attention</span><strong class="cri-metric-value">{{ late_ships|default:0 }}</strong><span class="cri-metric-note">{% if not ships %}Awaiting your production data{% elif late_ships %}Review delivery risks{% else %}Every shipment is on track{% endif %}</span></div>
+  </section>
+
+  <div class="cri-section-heading">
+    <h2>Shipment commitments</h2>
+    <nav class="cri-actions" aria-label="Planning workspace">
+      <a class="sieger-btn" href="{{ request.prefix }}/machine-schedule/">Machine schedule</a>
+      <a class="sieger-btn sieger-btn-primary" href="{{ request.prefix }}/production-orders/">Production orders &rarr;</a>
+    </nav>
+  </div>
+
+  {% if ships %}
+  <div class="sg-rp-tblwrap" role="region" aria-label="Shipment commitments table" tabindex="0">
+    <table class="sg-sd-t sg-home-t">
+      <thead>
+        <tr>
+          <th>Project Code</th>
+          <th>Project Description</th>
+          <th>Shipment ID</th>
+          <th>Delivery Date</th>
+          <th class="n">Week</th>
+          <th>Latest scheduled delivery</th>
+          <th>On target</th>
+          <th class="n">Machine hours</th>
+          <th>What to do next</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in ships %}
+        <tr class="sg-home-row{% if s.unplanned or s.short_orders %} is-crit{% elif s.late_orders %} is-late{% endif %}"
+             onclick="if (!event.target.closest('a') &amp;&amp; !window.getSelection().toString()) this.querySelector('a').click()">
+          <td class="mono">{{ s.project|default:"&mdash;" }}</td>
+          <td><a href="{{ request.prefix }}/shipment/{{ s.tag|urlencode:'' }}/" aria-label="Shipment analysis: {{ s.name }}"><b>{{ s.name }}</b></a></td>
+          <td class="mono">{{ s.tag }}</td>
+          <td>{{ s.due|date:"d M Y"|default:"&mdash;" }}</td>
+          <td class="n">{% if s.week %}{{ s.week }}{% else %}&mdash;{% endif %}</td>
+           <td>{{ s.finish|date:"d M Y"|default:"&mdash;" }}
+             {% if s.unplanned or s.short_orders %}<br><small>Full shipment date unknown</small>{% endif %}
+            {% if s.first_cut %}<br><small style="opacity:.6">production starts {{ s.first_cut|date:"d M" }}</small>{% endif %}</td>
+          <td>
+            <div class="sg-ship-obar" style="width:110px;height:12px">
+              <i style="width:{{ s.pct }}%"></i>
+            </div>
+            <small style="opacity:.75">{{ s.on_time }}/{{ s.orders }} ({{ s.pct }}%)</small>
+          </td>
+          <td class="n">{{ s.total_h|floatformat:"0" }} h<br>
+            <small style="opacity:.6">{{ s.ok_hpct }}% on target</small></td>
+          <td>{{ s.action }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="color:var(--sg-muted,#6b7a80)">
+          No shipments yet - load production orders and this screen fills by itself.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <section class="cri-empty sg-rp-tblwrap" aria-label="Get started">
+    <h2>Your next production plan starts here</h2>
+    <p>Add C.R.I Pumps products, machines and production orders to see shipment commitments and capacity in this workspace.</p>
+    <div class="cri-actions"><a class="sieger-btn sieger-btn-primary" href="{{ request.prefix }}/execute/">Import planning data</a><a class="sieger-btn" href="{{ request.prefix }}/data/input/item/">View products &amp; parts</a></div>
+  </section>
+  {% endif %}
+
+  {% if ships %}<p class="sieger-lede" style="margin-top:.6rem">
+    Select a shipment to see its delay reasons, all recorded blockers, order coverage and production progress.
+  </p>{% endif %}
+  <footer class="cri-footer"><span>C.R.I Pumps &middot; Production Planning</span><span>Manufacturing &nbsp; / &nbsp; Capacity &nbsp; / &nbsp; Delivery</span></footer>
+
+</div>
+{% endblock %}

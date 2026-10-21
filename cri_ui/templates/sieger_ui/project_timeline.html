@@ -1,0 +1,160 @@
+{% extends "admin/base_site_nav.html" %}
+{% load i18n %}
+
+{% comment %}
+Project timeline - one order, every operation, on a date axis.
+
+Rows are grouped production run -> its routing steps, then bought or
+transferred material, then the delivery. Same chart classes and modal as
+the machine schedule, so schedule.js drives the click-through here too:
+the root carries id="sg-sc" and data-op-url exactly like that board.
+{% endcomment %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="sg-sc sg-pj" id="sg-sc"
+     data-op-url="{{ request.prefix }}/machine-schedule/op/">
+
+  <header class="sieger-hd">
+    <div>
+      <p class="sieger-eyebrow">C.R.I Pumps &middot; Production Planning</p>
+      <h1 class="sieger-h1">{{ demand.name }}</h1>
+    </div>
+    <div class="sieger-hd-meta">
+      <span class="sieger-k">plan date</span>
+      <span class="sieger-v">{{ now|date:"D d M Y, H:i" }}</span>
+    </div>
+  </header>
+
+  {# ------------------------------------------------------------ header #}
+  <div class="sg-sc-bar-top">
+    <div class="sg-sc-facts">
+      <span class="sieger-stat">{{ demand.item_id|default:"&mdash;" }}{% if item_description %} &middot; {{ item_description }}{% endif %}</span>
+      {% if demand.customer_id %}<span class="sieger-stat">{{ demand.customer_id }}</span>{% endif %}
+      <span class="sieger-stat">qty <b>{{ quantity }}</b></span>
+      <span class="sieger-stat">due <b>{{ demand.due|date:"D d M Y" }}</b></span>
+      {% if delay_days > 0.05 %}
+      <span class="sieger-stat sieger-stat-warn"><b>{{ delay_days }}</b> days late</span>
+      {% else %}
+      <span class="sieger-stat sieger-stat-ok">on time</span>
+      {% endif %}
+      {% if category %}<span class="sieger-stat sieger-stat-quiet">{{ category }}</span>{% endif %}
+      <span class="sieger-stat sieger-stat-quiet">{{ op_count }} operation{{ op_count|pluralize }}</span>
+    </div>
+
+    <div class="sg-sc-nav">
+      <a class="sieger-btn" href="{{ request.prefix }}/">&larr; {% trans "all shipments" %}</a>
+      <a class="sieger-btn" href="{{ request.prefix }}/build-graph/{{ demand.name|urlencode }}/">{% trans "dependency view" %}</a>
+      <a class="sieger-btn" href="{{ request.prefix }}/data/input/demand/?name={{ demand.name|urlencode }}">{% trans "order record" %}</a>
+    </div>
+  </div>
+
+  <p class="sieger-lede">
+    {% trans "Everything the plan does for this order, in time. Click any bar for the full detail - machines, components and the reasons it slips." %}
+  </p>
+
+  {# -------------------------------------------------------------- chart #}
+  {% if groups %}
+  <div class="sg-sc-chart">
+
+    <div class="sg-sc-head">
+      <div class="sg-sc-name sg-sc-headname">{% trans "operation" %}</div>
+      <div class="sg-sc-track">
+        {% for t in ticks %}
+        <div class="sg-sc-tick{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+             style="left:{{ t.left }}%;width:{{ t.width }}%">
+          <span>{{ t.label }}</span>
+        </div>
+        {% endfor %}
+        {% if now_pct is not None %}
+        <div class="sg-sc-now" style="left:{{ now_pct }}%" title="{% trans 'plan date' %}"></div>
+        {% endif %}
+        {% if due_pct is not None %}
+        <div class="sg-pj-due" style="left:{{ due_pct }}%" title="{% trans 'due' %} {{ demand.due|date:'D d M Y' }}"></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% for g in groups %}
+    <section class="sg-sc-sec">
+      {% if g.header %}
+      <div class="sg-sc-grp sg-pj-run">
+        <b>{% trans "production run" %} {{ g.header.ref }}</b>
+        <span>{{ g.header.label }} &middot; qty {{ g.header.qty }}
+          {% if g.header.shared %}&middot; {% trans "shared with other orders" %}{% if g.header.peg_qty %} ({{ g.header.peg_qty }} {% trans "for this one" %}){% endif %}{% endif %}</span>
+      </div>
+      {% elif g.kind == 'supply' %}
+      <div class="sg-sc-grp sg-pj-run"><b>{% trans "material" %}</b><span>{% trans "purchased, transferred or from stock" %}</span></div>
+      {% elif g.kind == 'delivery' %}
+      <div class="sg-sc-grp sg-pj-run"><b>{% trans "delivery" %}</b></div>
+      {% elif g.kind == 'steps' %}
+      <div class="sg-sc-grp sg-pj-run"><b>{% trans "routing steps" %}</b></div>
+      {% endif %}
+
+      <div class="sg-sc-sec-body">
+        {% for r in g.rows %}
+        <div class="sg-sc-row sg-pj-row">
+          <div class="sg-sc-name">
+            <span class="sg-sc-mach">{{ r.operation|default:r.label }}</span>
+            <span class="sg-sc-meta">{{ r.kind }}{% if r.machines %} &middot; {{ r.machines|join:", " }}{% endif %}</span>
+          </div>
+
+          <div class="sg-sc-track sg-pj-track">
+            {% for t in ticks %}
+            <div class="sg-sc-col{% if t.major %} is-major{% endif %}{% if t.weekend %} is-weekend{% endif %}"
+                 style="left:{{ t.left }}%;width:{{ t.width }}%"></div>
+            {% endfor %}
+            {% if now_pct is not None %}
+            <div class="sg-sc-now" style="left:{{ now_pct }}%"></div>
+            {% endif %}
+            {% if due_pct is not None %}
+            <div class="sg-pj-due" style="left:{{ due_pct }}%"></div>
+            {% endif %}
+
+            <div class="sg-sc-bar is-{{ r.tone }}{% if r.status == 'proposed' %} is-proposed{% endif %}"
+                 data-ref="{{ r.ref }}" role="button" tabindex="0"
+                 style="left:{{ r.left }}%;width:{{ r.width }}%;top:calc(0 * var(--sg-sc-lane));"
+                 title="{{ r.label }}&#10;{% if r.operation %}{{ r.operation }}&#10;{% endif %}ref {{ r.ref }} &middot; {{ r.kind }}&#10;{{ r.start|date:'D d M H:i' }} &rarr; {{ r.end|date:'D d M H:i' }} ({{ r.hours }} h)&#10;qty {{ r.qty }} &middot; {{ r.status }}{% if r.delay_days > 0.05 %}&#10;{{ r.delay_days }} days late{% endif %}{% if r.machines %}&#10;{{ r.machines|join:', ' }}{% endif %}">
+              <span class="sg-sc-lbl">{{ r.operation|default:r.label }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+  {# --------------------------------------------------------------- key #}
+  <div class="sg-sc-key">
+    <span><i class="sg-sc-sw is-ok"></i>{% trans "on time" %}</span>
+    <span><i class="sg-sc-sw is-late"></i>{% trans "late" %}</span>
+    <span><i class="sg-sc-sw is-crit"></i>{% trans "critical / infeasible" %}</span>
+    <span><i class="sg-sc-sw sg-pj-sw-due"></i>{% trans "due date" %}</span>
+    <span><i class="sg-sc-sw sg-sc-sw-now"></i>{% trans "plan date" %}</span>
+    <span class="sg-sc-key-note">{% trans "Click any bar for the full order detail." %}</span>
+  </div>
+
+  {% else %}
+  <div class="sieger-card sieger-card-note">
+    <p><b>{% trans "Nothing is planned for this order yet." %}</b></p>
+    <p>{% trans "Either the plan has not been run since it was loaded, or the part has no routing - check the build graph picker, which flags orders that cannot be scheduled." %}</p>
+  </div>
+  {% endif %}
+
+  {# ------------------------------------------------------------- popup #}
+  <div class="sg-md" id="sg-md" hidden>
+    <div class="sg-md-back" data-close></div>
+    <div class="sg-md-panel" role="dialog" aria-modal="true" aria-labelledby="sg-md-title">
+      <button class="sg-md-x" type="button" data-close aria-label="{% trans 'close' %}">&times;</button>
+      <div class="sg-md-body" id="sg-md-body">
+        <p class="sg-md-load">loading&hellip;</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{STATIC_URL}}sieger_ui/schedule.js?v=1"></script>
+{% endblock %}
